@@ -1,0 +1,143 @@
+app:
+  description: "A research agent chatflow that uses an LLM with detailed tool-use instructions to investigate topics, synthesize information, and provide well-sourced answers."
+  icon: "🤖"
+  icon_background: "#FFEAD5"
+  mode: advanced-chat
+  name: "Agent Chatflow"
+kind: app
+version: 0.1.3
+workflow:
+  features:
+    file_upload:
+      image:
+        enabled: false
+        number_limits: 3
+        transfer_methods:
+          - local_file
+    opening_statement: "Hello! I am a research agent. Ask me anything and I will investigate thoroughly."
+    retriever_resource:
+      enabled: false
+    sensitive_word_avoidance:
+      enabled: false
+    speech_to_text:
+      enabled: false
+    suggested_questions:
+      - "What are the latest developments in AI safety research?"
+      - "Summarize the key points of the GDPR."
+    suggested_questions_after_answer:
+      enabled: true
+    text_to_speech:
+      enabled: false
+      language: ""
+      voice: ""
+  graph:
+    edges:
+      - data:
+          isInIteration: false
+          sourceType: start
+          targetType: llm
+        id: "1718007000001-source-1718007000002-target"
+        selected: false
+        source: "1718007000001"
+        sourceHandle: source
+        target: "1718007000002"
+        targetHandle: target
+        type: custom
+        zIndex: 0
+      - data:
+          isInIteration: false
+          sourceType: llm
+          targetType: answer
+        id: "1718007000002-source-1718007000003-target"
+        selected: false
+        source: "1718007000002"
+        sourceHandle: source
+        target: "1718007000003"
+        targetHandle: target
+        type: custom
+        zIndex: 0
+    nodes:
+      - data:
+          desc: "Entry point — receives the user's research query"
+          selected: false
+          title: "Start"
+          type: start
+          variables: []
+        height: 54
+        id: "1718007000001"
+        position:
+          x: 80
+          y: 282
+        positionAbsolute:
+          x: 80
+          y: 282
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          context:
+            enabled: false
+            variable_selector: []
+          desc: "Research agent LLM with structured reasoning instructions"
+          model:
+            completion_params:
+              max_tokens: 4096
+              temperature: 0.5
+            mode: chat
+            name: claude-sonnet-4-6
+            provider: anthropic
+          prompt_template:
+            - role: system
+              text: |
+                You are an expert research agent with broad knowledge across science, technology, history, law, medicine, and the arts.
+
+                When answering a question, follow this structured approach:
+                1. UNDERSTAND: Restate the core question in your own words to confirm understanding.
+                2. RESEARCH: Draw on your knowledge to gather relevant facts, dates, definitions, and context.
+                3. ANALYZE: Synthesize the information, identify key themes, and evaluate conflicting viewpoints if any.
+                4. ANSWER: Provide a clear, well-structured response with appropriate detail.
+                5. CITE: Note any important sources, authors, or references the user might consult for further reading.
+
+                Always be honest about uncertainty. If you don't know something, say so clearly rather than guessing.
+                Format your responses with markdown headings and bullet points where appropriate for readability.
+            - role: user
+              text: "{{#1718007000001.sys.query#}}"
+          selected: false
+          title: "Research Agent"
+          type: llm
+          vision:
+            enabled: false
+        height: 98
+        id: "1718007000002"
+        position:
+          x: 380
+          y: 282
+        positionAbsolute:
+          x: 380
+          y: 282
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          answer: "{{#1718007000002.text#}}"
+          desc: "Streams the research response to the user"
+          selected: false
+          title: "Answer"
+          type: answer
+        height: 54
+        id: "1718007000003"
+        position:
+          x: 680
+          y: 282
+        positionAbsolute:
+          x: 680
+          y: 282
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244

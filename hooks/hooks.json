@@ -1,0 +1,11 @@
+{
+  "hooks": [
+    {
+      "name": "auto-validate-dsl",
+      "event": "PostToolCall",
+      "tool": "Write",
+      "condition": "path.endswith('.yml') or path.endswith('.yaml')",
+      "command": "hooks/post-write-validate.sh"
+    }
+  ]
+}

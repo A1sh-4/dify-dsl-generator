@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:docs.dify.ai)",
+      "WebFetch(domain:marketplace.dify.ai)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "WebFetch(domain:github.com)",
+      "WebSearch",
+      "Bash(python scripts/validate_workflow.py *)",
+      "Bash(python scripts/generate_id.py)",
+      "Bash(python scripts/format_yaml.py *)"
+    ]
+  }
+}

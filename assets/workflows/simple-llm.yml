@@ -1,0 +1,119 @@
+app:
+  description: "A simple workflow that takes a user question and returns an LLM-generated answer."
+  icon: "🤖"
+  icon_background: "#FFEAD5"
+  mode: workflow
+  name: "Simple LLM Workflow"
+kind: app
+version: 0.1.3
+workflow:
+  graph:
+    edges:
+      - data:
+          isInIteration: false
+          sourceType: start
+          targetType: llm
+        id: "1718001000001-source-1718001000002-target"
+        selected: false
+        source: "1718001000001"
+        sourceHandle: source
+        target: "1718001000002"
+        targetHandle: target
+        type: custom
+        zIndex: 0
+      - data:
+          isInIteration: false
+          sourceType: llm
+          targetType: end
+        id: "1718001000002-source-1718001000003-target"
+        selected: false
+        source: "1718001000002"
+        sourceHandle: source
+        target: "1718001000003"
+        targetHandle: target
+        type: custom
+        zIndex: 0
+    nodes:
+      - data:
+          desc: "Entry point — collects the user's question"
+          selected: false
+          title: "Start"
+          type: start
+          variables:
+            - label: "Your question"
+              max_length: 2048
+              options: []
+              required: true
+              type: text-input
+              variable: user_query
+        height: 90
+        id: "1718001000001"
+        position:
+          x: 80
+          y: 282
+        positionAbsolute:
+          x: 80
+          y: 282
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          context:
+            enabled: false
+            variable_selector: []
+          desc: "Generates an answer using claude-sonnet-4-6"
+          model:
+            completion_params:
+              max_tokens: 2048
+              temperature: 0.7
+            mode: chat
+            name: claude-sonnet-4-6
+            provider: anthropic
+          prompt_template:
+            - role: system
+              text: "You are a helpful assistant."
+            - role: user
+              text: "{{#1718001000001.user_query#}}"
+          selected: false
+          title: "LLM"
+          type: llm
+          vision:
+            enabled: false
+        height: 98
+        id: "1718001000002"
+        position:
+          x: 380
+          y: 282
+        positionAbsolute:
+          x: 380
+          y: 282
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          desc: "Returns the generated answer"
+          outputs:
+            - value_selector:
+                - "1718001000002"
+                - text
+              variable: result
+          selected: false
+          title: "End"
+          type: end
+        height: 54
+        id: "1718001000003"
+        position:
+          x: 680
+          y: 282
+        positionAbsolute:
+          x: 680
+          y: 282
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
