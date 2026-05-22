@@ -1,9 +1,38 @@
+# Secrets and local config
 *.local.json
+.env
+*.env.*
+
+# Python cache
 __pycache__/
 *.pyc
 *.pyo
-.env
-*.log
+*.pyd
+.Python
+
+# Generated DSL output (user-generated files, not part of the plugin)
+output/
+
+# Dummy data generated for knowledge base testing
+# (keep the directory stub but ignore actual data files)
+knowledge/*/
+knowledge/*.md
+!knowledge/README.md
+
+# Test-run YAMLs
+tests/*.yml
+
+# OS junk
 .DS_Store
 Thumbs.db
-tests/*.yml
+desktop.ini
+
+# Logs
+*.log
+
+# Editor/IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
