@@ -138,7 +138,28 @@ def validate(data: dict, verbose: bool) -> list:
             )
 
     # ------------------------------------------------------------------
-    # 9. At least one node with type 'start'
+    # 9. workflow.environment_variables must be present (list)
+    # ------------------------------------------------------------------
+    if "environment_variables" not in workflow:
+        errors.append(
+            "'workflow.environment_variables' is missing - must be present as [] even if empty. "
+            "Its absence causes Dify to crash with 'An unexpected error occurred while rendering this component'."
+        )
+
+    # ------------------------------------------------------------------
+    # 10. workflow.features must be present (not missing, not null)
+    # ------------------------------------------------------------------
+    features = workflow.get("features")
+    if features is None:
+        errors.append(
+            "'workflow.features' is missing - must be present with at least file_upload, retriever_resource, etc. "
+            "Its absence causes Dify to crash with 'An unexpected error occurred while rendering this component'."
+        )
+    elif not isinstance(features, dict):
+        errors.append("'workflow.features' must be a mapping (dict), not a scalar value.")
+
+    # ------------------------------------------------------------------
+    # 12. At least one node with type 'start'
     # ------------------------------------------------------------------
     node_types = [
         str(node.get("data", {}).get("type", node.get("type", "")))
@@ -149,7 +170,7 @@ def validate(data: dict, verbose: bool) -> list:
         errors.append("No node with type 'start' found — a workflow must have a start node.")
 
     # ------------------------------------------------------------------
-    # 10. At least one node with type 'end' or 'answer'
+    # 13. At least one node with type 'end' or 'answer'
     # ------------------------------------------------------------------
     if "end" not in node_types and "answer" not in node_types:
         errors.append(
@@ -158,7 +179,7 @@ def validate(data: dict, verbose: bool) -> list:
         )
 
     # ------------------------------------------------------------------
-    # 11. Variable references use existing node IDs
+    # 14. Variable references use existing node IDs
     # ------------------------------------------------------------------
     bad_refs = []
     for ref_node_id, full_ref in find_variable_references(data):
@@ -214,7 +235,7 @@ def main():
     errors = validate(data, verbose=args.verbose)
 
     if errors:
-        print(f"\nFAIL — {len(errors)} error(s) found:\n")
+        print(f"\nFAIL - {len(errors)} error(s) found:\n")
         for err in errors:
             print(f"  [ERROR] {err}")
         sys.exit(1)

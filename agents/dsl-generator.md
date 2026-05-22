@@ -74,66 +74,58 @@ app:
 
 Use the description and name from the requirements brief exactly. Do not invent a new name. The icon and icon_background may be adjusted based on the application's domain (e.g., a document tool might use 📄, a data pipeline might use ⚙️), but defaults are acceptable.
 
-### Step 3 — Build the `features` block
-
-Include only features that are relevant to this application based on the requirements brief. Common features:
-
-**For chatflows:**
-```yaml
-features:
-  file_upload:
-    enabled: [true | false]         # true only if "file upload" in special requirements
-    allowed_file_types:
-      - document
-    allowed_file_upload_methods:
-      - local_file
-    max_length: 3
-  opening_statement: ""             # optional welcome message
-  retriever_resource:
-    enabled: [true | false]         # true if knowledge base / RAG is used
-  sensitive_word_avoidance:
-    enabled: false
-  speech_to_text:
-    enabled: false
-  suggested_questions: []
-  suggested_questions_after_answer:
-    enabled: false
-  text_to_speech:
-    enabled: false
-    language: ""
-    voice: ""
-```
-
-**For workflows:**
-```yaml
-features: {}
-```
-
-### Step 4 — Build the `kind` and `version` fields
+### Step 3 — Build the `kind`, `version`, and `dependencies` fields
 
 ```yaml
 kind: app
 version: 0.1.3
+dependencies: []        # add marketplace plugin entries here if tool nodes use plugins
 ```
 
-These are fixed values for current Dify DSL format. Do not change them.
+These values are fixed for current Dify DSL format. Do not change `kind` or `version`.
 
-### Step 5 — Build the `workflow` block
+### Step 4 — Build the `workflow` block
 
-The `workflow` block contains: `conversation_variables` (chatflow only), `environment_variables`, `features` (workflow-level), `graph`, and `hash`.
+The `workflow` block MUST contain all of these top-level keys — omitting any one causes Dify to crash with "An unexpected error occurred while rendering this component":
+
+- `conversation_variables` — always include as `[]` for workflows; may have entries for chatflows
+- `environment_variables` — always include; list env var entries for any API keys/secrets
+- `features` — ALWAYS include the full block, never omit or use `{}`; Dify's renderer reads specific subfields
+- `graph` — contains `edges` and `nodes`
 
 ```yaml
 workflow:
-  conversation_variables: []        # chatflow only — add variables here if memory is needed
-  environment_variables: []         # list any env vars referenced in the YAML here
-  features:
+  conversation_variables: []        # REQUIRED — always present; for workflows always []; for chatflows may have entries
+  environment_variables: []         # REQUIRED — always present; add entries when secrets are needed
+  features:                         # REQUIRED — always include the full block, NEVER omit or use {}
+    file_upload:
+      enabled: [true | false]       # true only if "file upload" in requirements; false otherwise
+      image:
+        enabled: [true | false]
+        number_limits: 3
+        transfer_methods:
+          - local_file
+          - remote_url
+    opening_statement: ""           # chatflows: welcome message; workflows: always ""
     retriever_resource:
-      enabled: [true | false]
+      enabled: [true | false]       # true if knowledge-retrieval node is present
+    sensitive_word_avoidance:
+      enabled: false
+    speech_to_text:
+      enabled: false
+    suggested_questions: []
+    suggested_questions_after_answer:
+      enabled: false
+    text_to_speech:
+      enabled: false
+      language: ""
+      voice: ""
   graph:
     edges: [...]
     nodes: [...]
-  hash: ""                          # leave empty — Dify generates this on import
 ```
+
+**CRITICAL**: If you omit `workflow.features`, `workflow.conversation_variables`, or `workflow.environment_variables`, the generated YAML will crash Dify's editor with a React rendering error. These three keys are mandatory regardless of app type.
 
 ### Step 6 — Build each node's YAML block
 
@@ -224,7 +216,8 @@ answer: "{{#[llm_node_id].text#}}"
 ```yaml
 type: end
 outputs:
-  - value_selector: [[node_id, "field_name"]]
+  - label: "[Human-readable label for Dify editor]"   # REQUIRED — do not omit
+    value_selector: [[node_id, "field_name"]]
     variable: [output_variable_name]
 ```
 
@@ -344,14 +337,30 @@ If the requirements brief mentions an external service requiring authentication,
 
 Before presenting output to the user, confirm every item:
 
-- [ ] `kind: app` and `version: 0.1.3` are present
-- [ ] `app.mode` matches the requirements brief app type
+**Top-level structure:**
+- [ ] `kind: app` is present
+- [ ] `version: 0.1.3` is present
+- [ ] `dependencies: []` is present (even if no plugins)
+- [ ] `app.mode` matches the requirements brief app type (`advanced-chat` or `workflow`)
+- [ ] `app.use_icon_as_answer_icon: false` is present
+
+**`workflow` block — ALL THREE of these must be present or Dify crashes:**
+- [ ] `workflow.conversation_variables` is present (always `[]` for workflows; may have entries for chatflows)
+- [ ] `workflow.environment_variables` is present (always a list, even if empty)
+- [ ] `workflow.features` is present as a full block with `file_upload`, `retriever_resource`, etc. — NEVER as `{}` or omitted
+
+**Graph:**
 - [ ] All nodes from the approved plan are present with correct IDs, types, and positions
 - [ ] All edges from the approved plan are present with correct IDs, handles, and references
 - [ ] All LLM node prompts match the prompt-engineer specifications exactly
+- [ ] End node `outputs` entries include `label`, `value_selector`, AND `variable`
 - [ ] No variable reference uses a node ID that is not in the node list
+
+**Security:**
 - [ ] No API keys or secrets appear as literal values
 - [ ] The terminal node is `answer` (chatflow) or `end` (workflow)
+
+**Formatting:**
 - [ ] `python scripts/format_yaml.py --inplace [filename].yml` has been run
 - [ ] The file has been written and the path has been stated clearly
 
