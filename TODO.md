@@ -30,7 +30,7 @@ Track improvement tasks here. Check items off as they are completed. Add new ite
 
 - [x] Update `agents/requirements-analyzer.md` — add an output format preference question (table vs card vs prose) so `node-planner` doesn't have to guess the layout type
 - [x] Update `skills/dify.md` Step 6 (prompt-engineer spawn) — explicitly pass which nodes in the plan are upstream of `template-transform` nodes so `prompt-engineer` knows which specs need the template guidance section
-- [ ] Update `agents/dsl-validator.md` — add checks for: `template-transform` node presence in chatflows, non-empty `opening_statement` in chatflows, `answer` node referencing `template_node_id.output` (not raw LLM text)
+- [x] Update `agents/dsl-validator.md` — add checks for: `template-transform` node presence in chatflows, non-empty `opening_statement` in chatflows, `answer` node referencing `template_node_id.output` (not raw LLM text)
 - [x] Update `docs/nodes/llm.md` — add `structured_output` / `structured_output_enabled` field documentation with schema example and when-to-use guidance
 
 ---

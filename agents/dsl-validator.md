@@ -33,10 +33,82 @@ Do not declare success based on a visual inspection of the YAML. The only valid 
 ### Step 2 — Evaluate the result
 
 **If PASS (exit code 0):**
-Go directly to Step 5 — report success. Do not perform additional checks.
+Proceed to Step 2a — quality checks. Do not skip to Step 5 yet.
 
 **If FAIL (non-zero exit code):**
 Proceed to Step 3 for each error reported in the script output.
+
+---
+
+### Step 2a — Quality checks (chatflow only, runs after script PASS)
+
+If the file's `app.mode` is `advanced-chat`, read the YAML directly and run all three checks below. These catch design quality issues the validation script does not cover. They are warnings — the file can still be imported — but each one degrades output quality and represents a rule violation from `node-planner` or `dsl-generator`.
+
+If `app.mode` is `workflow`, skip this step entirely and go to Step 5.
+
+---
+
+#### Quality Check A — template-transform node presence
+
+Scan the `nodes` list. Check whether any node has `type: template-transform`.
+
+- If at least one `template-transform` node exists → Check A passes.
+- If none exists → flag:
+
+```text
+QUALITY WARN A: No template-transform node found in this chatflow.
+Chatflows must format their output through a template-transform node.
+The answer node is likely streaming raw LLM text directly to the user.
+Action required: re-run dsl-generator and explicitly instruct it to include
+a template-transform node before the answer node.
+```
+
+This check is **not auto-fixable** — inserting a template-transform node requires knowing which variables to bind and what layout to render.
+
+---
+
+#### Quality Check B — opening_statement not empty
+
+Read the `workflow.opening_statement` field from the YAML.
+
+- If the value has 50 or more characters and contains at least one HTML tag (`<`) → Check B passes.
+- If the value is an empty string `""`, whitespace-only, or fewer than 50 characters (indicating a placeholder or missing content) → flag:
+
+```text
+QUALITY WARN B: opening_statement is empty or too short (found: "[current value]").
+Every chatflow must have a rich HTML conversation opener that tells the user
+what the app does and how to use it.
+Action required: re-run dsl-generator and explicitly instruct it to write
+a complete HTML opening_statement.
+```
+
+This check is **not auto-fixable** — the content of the opener depends on what the app does.
+
+---
+
+#### Quality Check C — answer node references template-transform output
+
+Find the node with `type: answer`. Read its `answer` field value — this should be a string containing a `{{#node_id.field#}}` reference.
+
+1. Extract the `node_id` from the reference (the part between `{{#` and the first `.`).
+2. Look up that `node_id` in the nodes list.
+3. Check the `type` of that node.
+
+- If the referenced node has `type: template-transform` → Check C passes.
+- If the referenced node has any other type (commonly `llm`) → flag and auto-fix:
+
+```text
+QUALITY WARN C: answer node references [node_type] node "[node_title]" (ID: [node_id])
+directly, bypassing the template-transform node.
+```
+
+**Auto-fix for Check C:** Find the `template-transform` node in the nodes list. Replace the `answer` field value in the `answer` node with `{{#[template_node_id].output#}}`. Re-validate after applying this fix.
+
+If no `template-transform` node exists (Check A also failed), this check is **not auto-fixable** — record it as requiring user action alongside Check A.
+
+---
+
+After running all three quality checks, proceed to Step 5. Include the quality check results in the report regardless of pass/fail outcome.
 
 ### Step 3 — Classify and fix each error
 
@@ -86,6 +158,9 @@ Use this table to classify every error the validation script reports. Apply the 
 | No path from start node to any terminal node | No | Report to user: "One or more branches have no terminal node (no `answer` or `end` node reachable from the start). The node plan must be revised." |
 | Missing required field in a node's `data` block | No | Report to user: "Node [id] of type [type] is missing required field [field_name]. Please re-run the dsl-generator with the correct node documentation for this node type." |
 | Invalid model name or provider | No | Report to user: "Node [id] specifies an unknown model [model_name] / provider [provider_name]. Check `docs/config/llm-settings.md` for valid model identifiers." |
+| Quality Warn A: no `template-transform` node in chatflow | No | Report to user: "This chatflow has no template-transform node. The answer node is streaming raw LLM text. Re-run dsl-generator and explicitly instruct it to include a template-transform node before the answer node." |
+| Quality Warn B: `opening_statement` is empty or too short | No | Report to user: "The opening_statement is empty or too short. Re-run dsl-generator and explicitly instruct it to write a rich HTML opening_statement for this chatflow." |
+| Quality Warn C: `answer` node references LLM output directly | Yes | Find the `template-transform` node ID in the nodes list. Update the `answer` field of the `answer` node to `{{#[template_node_id].output#}}`. If no `template-transform` node exists, report as user action required alongside Warn A. |
 
 **Important scoping rule for auto-fixes:**
 
@@ -113,11 +188,9 @@ Timestamp: [current date and time]
 [Paste the complete raw output from scripts/validate_workflow.py here, verbatim]
 ---------------------
 
-Initial status: [PASS | FAIL]
+Script status: [PASS | FAIL]
 
-[If initial status is PASS — skip the errors section and go directly to the success block]
-
-[If initial status is FAIL:]
+[If script status is FAIL:]
 Errors found: [N]
 
   Error 1: [exact error message from script]
@@ -144,7 +217,31 @@ Remaining errors requiring user action: [N]
   1. [error] — [what the user must do]
   2. [error] — [what the user must do]
 
-[Success block — show only when final status is PASS:]
+[Quality checks — include this section for chatflows only; omit entirely for workflows:]
+Quality checks (chatflow only):
+
+  Check A — template-transform presence: [PASS | WARN]
+  [If WARN:]
+    Issue: No template-transform node found. Answer node is streaming raw LLM text.
+    Action: Re-run dsl-generator with an explicit instruction to include a
+            template-transform node before the answer node.
+
+  Check B — opening_statement: [PASS | WARN]
+  [If WARN:]
+    Issue: opening_statement is empty or too short (current value: "[value]").
+    Action: Re-run dsl-generator with an explicit instruction to write a rich
+            HTML opening_statement for this chatflow.
+
+  Check C — answer node wiring: [PASS | WARN — AUTO-FIXED | WARN — USER ACTION REQUIRED]
+  [If AUTO-FIXED:]
+    Issue: answer node was referencing [node_type] "[node_title]" (ID: [node_id]) directly.
+    Fix applied: Updated answer field to {{#[template_node_id].output#}}.
+  [If USER ACTION REQUIRED:]
+    Issue: answer node references [node_type] "[node_title]" directly and no
+           template-transform node exists to redirect it to.
+    Action: See Check A — add a template-transform node, then re-run.
+
+[Success block — show only when script status is PASS (or post-fix PASS):]
 ✓ VALIDATION PASSED
 File: [filename.yml]
 Nodes: [count] | Edges: [count] | Mode: [app.mode value]
@@ -166,6 +263,7 @@ Import instructions:
 
 - ALWAYS run `scripts/validate_workflow.py` as the very first action — this rule has no exceptions
 - NEVER declare PASS without a zero exit code from `scripts/validate_workflow.py`
+- ALWAYS run Step 2a quality checks after the script passes for chatflow files — never skip straight to Step 5 for chatflows
 - NEVER skip re-validation after applying an auto-fix
 - NEVER modify node logic, prompts, temperatures, condition expressions, or HTTP request content — fix only structural and reference errors
 - NEVER remove a node to fix a dangling edge unless the node is genuinely absent from the design (not just misreferenced)
