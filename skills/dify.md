@@ -96,15 +96,94 @@ Pass to plugin-finder:
 
 #### 4b — Knowledge Base / RAG (run if requirements brief flags RAG as needed)
 
-Spawn `knowledge-architect` (defined in `agents/knowledge-architect.md`).
+**IMPORTANT: This step requires direct user interaction. Ask the questions yourself — do not spawn any agent until you have collected all the answers described below. Agents cannot ask the user questions; only you can.**
 
-Pass:
-- Requirements brief (specifically the knowledge base and RAG sections)
-- Any dataset names or document types the user mentioned
+##### Sub-step 4b-1: Ask document characteristics (send as one message)
 
-Wait for: complete RAG design package (dataset selection, retrieval mode, top-k, score threshold, citation strategy).
+Ask all three questions together in a single message — never one at a time:
 
-**Dummy data sub-case:** If the user does not have existing documents and needs sample data to test the knowledge base, `knowledge-architect` will spawn `dummy-data-generator` (defined in `agents/dummy-data-generator.md`) internally. Wait for that sub-process to complete before treating the RAG design as finalized.
+```text
+Before I design the retrieval pipeline, I need to understand your documents:
+
+1. What kind of documents will go in the knowledge base?
+   (e.g., PDF user manuals, website pages, a CSV of FAQ entries, plain text articles, Word documents)
+
+2. Roughly how much content are we talking about?
+   (e.g., "10 product PDFs averaging 20 pages each", "500 FAQ entries", "a full help center with ~200 articles")
+
+3. How often does this content change?
+   - Rarely (set it up once)
+   - Monthly (periodic batch updates)
+   - Daily or continuously (needs a reliable re-indexing process)
+```
+
+Wait for the user's answers before asking anything else.
+
+##### Sub-step 4b-2: Ask the data readiness question (send as a separate message)
+
+Ask this as a clearly framed standalone question:
+
+```text
+One important question before I design the retrieval setup:
+
+Do you already have the documents ready to upload, or do you need me to generate
+some sample data so you can test the workflow first?
+
+  A) "I have my documents ready" — I'll proceed to design the retrieval pipeline
+  B) "I need sample/test data first" — I'll generate realistic dummy content you can upload right away
+  C) "Pull real public information from the web" — I'll fetch actual content on this topic and prepare it for upload
+```
+
+Wait for the user's answer. Their choice determines the next sub-step.
+
+##### Sub-step 4b-3: Dummy data (ONLY if user chose B or C)
+
+Ask all four dummy-data questions in a single message:
+
+```text
+I need a few quick details to generate your knowledge base content:
+
+1. What topic or domain is your knowledge base about?
+   (e.g., "our product's FAQ", "HR onboarding policies", "medical symptom descriptions")
+
+2. How many documents do you want?
+   (5 is a good starting point for testing; 10-20 gives a richer demo experience)
+
+3. What format do you prefer?
+   - Markdown articles (good for long-form how-tos and documentation)
+   - Plain text paragraphs (clean and simple, works with any retrieval setup)
+   - Q&A pairs in CSV format (best for FAQ-style content)
+
+4. Should I make up realistic-sounding content (synthetic), or search the web for real public information on this topic?
+   (Synthetic is faster. Real web content gives actual facts and terminology — but verify licenses before production use.)
+```
+
+Wait for all four answers, then spawn `dummy-data-generator` (defined in `agents/dummy-data-generator.md`).
+
+Pass to dummy-data-generator:
+
+- Domain/topic (answer to question 1)
+- Quantity (answer to question 2)
+- Format preference (answer to question 3)
+- Source preference: synthetic or web-fetched (answer to question 4)
+
+Wait for dummy-data-generator to complete and confirm the files are written to `knowledge/[project-name]/`.
+
+##### Sub-step 4b-4: Spawn knowledge-architect (always, with all collected context)
+
+Now spawn `knowledge-architect` (defined in `agents/knowledge-architect.md`).
+
+Pass ALL of the following:
+
+- Requirements brief
+- Document characteristics (user's answers from Sub-step 4b-1: types, volume, update frequency)
+- Data readiness status: one of `user_has_data` | `dummy_data_generated` | `web_data_fetched`
+- If dummy or web data was generated: the path `knowledge/[project-name]/` and a summary of what was generated
+- The user's original description
+
+Instruct knowledge-architect to skip Steps 1 and 2 from its process (those questions have already been asked by you). It should proceed directly to chunking recommendations (its Step 3) using the context provided.
+
+Wait for: complete RAG design package delimited by `=== RAG DESIGN: ... ===` and `=== END RAG DESIGN ===`.
 
 Store the RAG design package.
 
@@ -146,15 +225,44 @@ Spawn the `node-planner` agent defined in `agents/node-planner.md`.
 
 ### Step 6 — Spawn prompt-engineer (MANDATORY)
 
+**Before spawning — trace template-transform upstreams yourself.**
+
+The approved node plan contains `NODES`, `EDGES`, and `VARIABLE FLOW` sections. Before spawning `prompt-engineer`, perform this analysis yourself — do not delegate it to the agent:
+
+1. Scan the `NODES` section and record every node whose `type` is `template-transform`. Note its `node_id` and title.
+2. For each `template-transform` node found, walk backwards through the `EDGES` and `VARIABLE FLOW` sections to find every upstream node of type `llm` or `agent` that feeds into it — including indirect paths through intermediate `code` nodes.
+3. Compose a `TEMPLATE-TRANSFORM UPSTREAM ANALYSIS` block using the format below and pass it to `prompt-engineer` alongside the other inputs.
+
+```text
+TEMPLATE-TRANSFORM UPSTREAM ANALYSIS:
+The following LLM/agent nodes feed into template-transform nodes.
+Each MUST include a "Template-transform guidance" section in its prompt spec.
+
+- [llm_node_id]  "[LLM Node Title]"
+    Path: direct → template-transform [tt_node_id] "[Template Node Title]"
+
+- [llm_node_id2] "[LLM Node Title 2]"
+    Path: via code node [code_node_id] "[Code Node Title]" → template-transform [tt_node_id] "[Template Node Title]"
+
+If no template-transform nodes exist in this plan:
+  NONE — no Template-transform guidance sections are required.
+```
+
+If the plan has no `template-transform` nodes at all, still include the block with "NONE" so `prompt-engineer` has explicit confirmation rather than ambiguity.
+
+---
+
 Spawn the `prompt-engineer` agent defined in `agents/prompt-engineer.md`.
 
 **Pass to the agent:**
+
 - The approved node graph plan (full text)
 - The requirements brief
 - The user's original description
 - The user's language (if non-English, instruct prompt-engineer to write system prompts and user prompt templates in that language)
+- The `TEMPLATE-TRANSFORM UPSTREAM ANALYSIS` block composed above
 
-**What to wait for:** Prompt specifications for every LLM node and agent node identified in the approved plan. Each spec includes a system prompt and a user prompt template using Jinja2/Dify variable syntax (`{{#node_id.field#}}`).
+**What to wait for:** Prompt specifications for every LLM node and agent node identified in the approved plan. Each spec includes a system prompt and a user prompt template using Jinja2/Dify variable syntax (`{{#node_id.field#}}`). Any LLM node listed in the upstream analysis block must also include a `Template-transform guidance` section.
 
 No user interaction is needed during this step. Run silently and store the prompt specifications.
 
