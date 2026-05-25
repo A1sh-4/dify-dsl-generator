@@ -66,6 +66,9 @@ The `requirements-analyzer` agent may surface 1–2 clarifying questions if the 
 
 **Store** the complete requirements brief — every downstream agent receives it.
 
+**Derive the project folder name immediately after the brief is complete.**
+Read the `App name` field from the brief. Convert it to lowercase kebab-case (e.g., "Customer Support Bot" → `customer-support-bot`). This becomes `[project-name]` — used in every file path for the rest of the pipeline. All generated files for this run go inside `output/[project-name]/`. Create this folder when the first file is written; subsequent writes use the same path.
+
 ---
 
 ### Step 4 — Research Phase (CONDITIONAL)
@@ -166,8 +169,10 @@ Pass to dummy-data-generator:
 - Quantity (answer to question 2)
 - Format preference (answer to question 3)
 - Source preference: synthetic or web-fetched (answer to question 4)
+- Project folder path: `output/[project-name]/` — all files go inside this folder
+- Whether the workflow accepts file inputs (from requirements brief `file_upload` flag) — if yes, also generate sample input files in `output/[project-name]/sample-inputs/`
 
-Wait for dummy-data-generator to complete and confirm the files are written to `knowledge/[project-name]/`.
+Wait for dummy-data-generator to complete and confirm the files are written to `output/[project-name]/knowledge/`.
 
 ##### Sub-step 4b-4: Spawn knowledge-architect (always, with all collected context)
 
@@ -178,7 +183,7 @@ Pass ALL of the following:
 - Requirements brief
 - Document characteristics (user's answers from Sub-step 4b-1: types, volume, update frequency)
 - Data readiness status: one of `user_has_data` | `dummy_data_generated` | `web_data_fetched`
-- If dummy or web data was generated: the path `knowledge/[project-name]/` and a summary of what was generated
+- If dummy or web data was generated: the path `output/[project-name]/knowledge/` and a summary of what was generated
 - The user's original description
 
 Instruct knowledge-architect to skip Steps 1 and 2 from its process (those questions have already been asked by you). It should proceed directly to chunking recommendations (its Step 3) using the context provided.
@@ -324,6 +329,7 @@ Store the error strategy additions. They will be passed to `dsl-generator` in St
 Spawn the `dsl-generator` agent defined in `agents/dsl-generator.md`.
 
 **Pass to the agent — all of the following:**
+
 - The approved node graph plan
 - The prompt specifications from prompt-engineer
 - The error strategy additions from error-strategy (if produced)
@@ -332,17 +338,22 @@ Spawn the `dsl-generator` agent defined in `agents/dsl-generator.md`.
 - Integration configurations (if used)
 - RAG design package (if used)
 - The user's language (for any user-facing text fields in the YAML)
+- The project folder path: `output/[project-name]/` — the YAML and SETUP.md both go here
+- Knowledge base folder path (if RAG was used): `output/[project-name]/knowledge/`
+- Sample inputs folder path (if file inputs and dummy data were generated): `output/[project-name]/sample-inputs/`
 
 **The dsl-generator will:**
+
 1. Read the relevant schema docs (`docs/schema/chatflow-schema.md` or `docs/schema/workflow-schema.md`)
 2. Read all relevant node type docs from `docs/nodes/`
 3. Run `python scripts/generate_id.py` to generate all node IDs
 4. Assemble the complete YAML
 5. Run `python scripts/format_yaml.py` on the output for consistent indentation and field ordering
-6. Write the file to `output/[descriptive-name].yml`
-7. Display the complete YAML in a code block
+6. Write the YAML to `output/[project-name]/[project-name].yml`
+7. Write `output/[project-name]/SETUP.md` — the complete step-by-step Dify setup guide
+8. Display the complete YAML in a code block
 
-**Wait for:** Confirmation that the file has been written to the `output/` directory.
+**Wait for:** Confirmation that both the YAML and SETUP.md have been written to `output/[project-name]/`.
 
 Do not present the YAML to the user yourself — `dsl-generator` displays it. Your job is to wait and then proceed to Step 9.
 
@@ -350,7 +361,7 @@ Do not present the YAML to the user yourself — `dsl-generator` displays it. Yo
 
 ### Step 9 — Validation (AUTOMATIC + CONDITIONAL)
 
-**Automatic path:** The `hooks/post-write-validate.sh` hook fires automatically whenever a `.yml` file is written to `output/`. It runs `python scripts/validate_workflow.py` and outputs a pass/fail result. Watch for this output.
+**Automatic path:** The `hooks/post-write-validate.sh` hook fires automatically whenever a `.yml` file is written anywhere under `output/`. It runs `python scripts/validate_workflow.py` and outputs a pass/fail result. Watch for this output.
 
 **If the hook output shows PASS (`✓ DSL validation passed`):**
 Proceed directly to Step 10.
@@ -386,34 +397,32 @@ Once validation passes, deliver the final result to the user.
 **1. Confirmation**
 A single sentence confirming the file passed validation and is ready to import.
 
-**2. File location**
-The exact file path of the generated `.yml` file.
+#### 2. Project folder location
 
-**3. Import instructions**
+Tell the user where their complete project folder is. Tailor the message to the platform:
 
-Present these steps clearly (translate into the user's language if non-English):
+- **Claude Code desktop / CLI:** "Your project folder is at `output/[project-name]/` inside your current working directory."
+- **Claude Code web (claude.ai/code):** "Your project folder `output/[project-name]/` is ready. Use the file browser on the left or click the download button to save the folder to your computer."
+
+List the folder contents so the user knows what they have:
 
 ```
-To import your workflow into Dify:
-1. Go to Dify Studio (app.dify.ai or your self-hosted Dify URL)
-2. Click "Create App" → "Import DSL"
-3. Upload [filename].yml
-4. Review the imported workflow in the canvas
-5. Configure any environment variables, API keys, or knowledge base IDs
-   marked as placeholders in the workflow
-6. Click "Publish" when you are ready
+output/[project-name]/
+├── [project-name].yml        ← import this into Dify
+├── SETUP.md                  ← full setup guide, open this first
+├── knowledge/                ← (only if RAG) upload these files to Dify Knowledge
+│   └── ...
+└── sample-inputs/            ← (only if file inputs) use these to test the workflow
+    └── ...
 ```
 
-**4. Configuration checklist**
-List any items the user still needs to configure manually before the workflow will work:
-- Environment variables to set (each `{{#env.VARIABLE_NAME#}}` referenced in the YAML)
-- Knowledge base IDs to supply (if RAG is used)
-- Plugins to install from the Dify marketplace (if plugins are used)
-- Any API credentials to configure in Dify's connection settings
+#### 3. Direct the user to SETUP.md
 
-If there are no manual steps (pure LLM workflow), say so explicitly so the user knows they can import and publish immediately.
+Tell the user: "Open `SETUP.md` in your project folder — it contains the complete step-by-step guide for setting up this project in Dify, including plugin installation, knowledge base creation, environment variable configuration, and how to test the workflow."
 
-**5. Offer to build another**
+Do not repeat the full setup instructions here — SETUP.md covers them in detail.
+
+**4. Offer to build another**
 End with a brief offer: ask if they would like to build another workflow or chatflow in this session.
 
 ---

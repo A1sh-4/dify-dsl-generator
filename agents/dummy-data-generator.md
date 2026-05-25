@@ -10,12 +10,14 @@ Spawned by **knowledge-architect** when the user indicates they do not have docu
 
 ## Inputs
 
-Received from knowledge-architect's conversation context:
+Received from the skill orchestrator:
 
 - **Domain or topic** — what the knowledge base is about
 - **Desired quantity** — how many documents to generate (5, 10, 20, or custom)
 - **Preferred format** — Markdown articles, plain text paragraphs, or Q&A pairs in CSV format
 - **Source preference** — generate synthetic content from scratch, or fetch real public information from the web
+- **Project folder path** — `output/[project-name]/` — all files for this run go inside this folder
+- **File inputs flag** — whether the workflow accepts file uploads; if true, also generate sample input files
 
 ---
 
@@ -116,11 +118,11 @@ When the user chooses web-fetched content:
 - For plain text: `[domain-slug]-[N].txt`
 - For CSV: `[domain-slug]-qa.csv` (all Q&A pairs in a single file)
 
-**Save location:** All files must go into `knowledge/[project-name]/` where `[project-name]` is a lowercase kebab-case slug derived from the domain topic. For example, if the domain is "HR onboarding policies", the folder is `knowledge/hr-onboarding-policies/`.
+**Save location:** All knowledge base files go into `output/[project-name]/knowledge/` using the project folder path passed in from the orchestrator. The `[project-name]` comes from the skill — do not re-derive it here.
 
-Never save to the project root, to `output/`, or to any other location.
+Never save to the project root, to a bare `knowledge/` folder, or to any location outside `output/[project-name]/`.
 
-**Generate `knowledge/[project-name]/UPLOAD-GUIDE.md` with the following content:**
+**Generate `output/[project-name]/knowledge/UPLOAD-GUIDE.md` with the following content:**
 
 ```markdown
 # Knowledge Base Upload Guide: [Domain]
@@ -201,22 +203,45 @@ After indexing, try these sample queries to verify retrieval quality:
 
 ---
 
+### Part E: Generate Sample Input Files (only if file inputs flag is true)
+
+If the skill orchestrator indicated that the workflow accepts file uploads (e.g., a PDF, CSV, or text file input in the start node), generate one or more realistic sample input files so the user can test the workflow immediately after import.
+
+**File types to generate based on the start node's input variable type:**
+
+| Start node input type | Sample file to generate | Format guidance |
+| --- | --- | --- |
+| PDF / document upload | A realistic 1–2 page document in the app's domain | Write as Markdown, save as `.md` (Dify accepts Markdown as a document input for testing) |
+| CSV / spreadsheet | A realistic CSV with 10–20 rows of domain-appropriate data | Proper header row, realistic values, no lorem ipsum |
+| Plain text / `.txt` | A 200–400 word text document relevant to the domain | Natural prose, realistic content |
+| Image | Note only: write a text file `sample-inputs/README.md` explaining what kind of image to use | Do not generate binary image files |
+
+**Save location:** `output/[project-name]/sample-inputs/[descriptive-filename].[ext]`
+
+**Naming:** Use a descriptive filename that reflects the content — e.g., `sample-invoice.md`, `sample-products.csv`, `sample-support-ticket.txt`. Never use `sample1`, `test`, or `document`.
+
+---
+
 ## Output Summary
 
 After saving all files, print this summary block:
 
-```
+```text
 === DUMMY DATA GENERATED ===
 Domain: [topic]
 Mode: [synthetic | web-fetched]
-Files created: [N] files in knowledge/[project-name]/
+
+Knowledge base files: [N] files in output/[project-name]/knowledge/
   - [filename]: [brief description]
   - [filename]: [brief description]
   ...
 Total approximate word count: ~[N] words
-Upload guide: knowledge/[project-name]/UPLOAD-GUIDE.md
+Upload guide: output/[project-name]/knowledge/UPLOAD-GUIDE.md
 
-Next step: Upload the files to your Dify knowledge base using the guide above.
+Sample input files: [N] files in output/[project-name]/sample-inputs/  ← omit line if none
+  - [filename]: [brief description]
+
+Next step: Upload the knowledge base files to Dify using the guide above.
 Once uploaded and indexed, return to knowledge-architect to finalize the
 retrieval node configuration for your workflow.
 === END ===
@@ -230,6 +255,6 @@ retrieval node configuration for your workflow.
 - **NEVER generate lorem ipsum or placeholder text** — every word must be domain-realistic. If lorem ipsum appears in the output, the agent has failed its primary purpose.
 - **ALWAYS mix document lengths** — short + medium + long in the ratios described above. Uniform length is not acceptable.
 - **ALWAYS generate the UPLOAD-GUIDE.md** — it is not optional. Users unfamiliar with Dify need this guide.
-- **ALWAYS save to `knowledge/[project-name]/`** — not to the root, not to `output/`, not to `docs/`.
+- **ALWAYS save to `output/[project-name]/knowledge/`** — use the project folder path passed in from the orchestrator. Never save to a bare `knowledge/` folder, the project root, or `docs/`.
 - **Do NOT generate DSL YAML** — this agent's output is knowledge base content only. All YAML generation belongs to dsl-generator.
 - **Web mode must use WebSearch first, then WebFetch** — do not fabricate URLs.
