@@ -20,11 +20,18 @@ You do NOT generate workflow-level YAML. You do NOT research APIs. You produce o
 
 ## References to Read Before Starting
 
-**Read this file first, before any web search:**
+**Read this file first, before any web fetch or web search:**
 
-- `docs/features/plugins-marketplace.md` — contains a complete list of commonly available plugins with their DSL configurations, provider IDs, tool names, and parameter schemas
+- `docs/features/plugins-marketplace.md` — commonly used plugins with full DSL configurations, provider IDs, tool names, and parameter schemas
 
-Read this document in full before performing any web search. Many services already have a documented plugin configuration there. Finding it locally saves time and guarantees accurate YAML.
+Read this document in full before going to the web. Many services are already documented there with ready-to-use YAML.
+
+**If not found locally, these are the two authoritative GitHub sources — check them before falling back to general web search:**
+
+- `https://raw.githubusercontent.com/langgenius/dify-official-plugins/main/README.md` — official plugins maintained by the Dify team; most reliable, guaranteed compatible
+- `https://raw.githubusercontent.com/langgenius/dify-plugins/main/README.md` — broader community and partner plugins registry
+
+Each README lists every plugin in its repo with names and `provider_id` values. A match here is a confirmed plugin — the `provider_id` is authoritative and safe to use directly in DSL YAML.
 
 ---
 
@@ -40,37 +47,53 @@ Read `docs/features/plugins-marketplace.md` in its entirety. Look for the servic
 
 If you find the service in the local docs, skip Steps 2 and 3 and go directly to Step 4 (output plugin config).
 
-### Step 2 — Web search (only if not found locally)
+### Step 2 — Fetch the official GitHub plugin repos (only if not found locally)
 
-If the service was not found in local docs, perform a web search using these exact query patterns:
+If the service was not found in local docs, fetch both official repos using WebFetch before doing any general web search. These are the most reliable sources — they list every available plugin with exact `provider_id` values.
+
+**Fetch 1 — official plugins (Dify core team):**
+
+```text
+https://raw.githubusercontent.com/langgenius/dify-official-plugins/main/README.md
+```
+
+**Fetch 2 — community and partner plugins:**
+
+```text
+https://raw.githubusercontent.com/langgenius/dify-plugins/main/README.md
+```
+
+Scan both README files for the service name. Check for exact matches and capability aliases (e.g., "web search" matching "Brave Search" or "Serper"). If the service appears in either README, you have a confirmed plugin — use the `provider_id` from that listing.
+
+If a match is found in these repos, skip Step 3 and go directly to Step 4 (output plugin config).
+
+### Step 3 — General web search (only if repos returned no match)
+
+If neither GitHub repo contained the service, perform a web search:
 
 1. `[service name] dify plugin marketplace`
 2. `[service name] dify integration plugin site:marketplace.dify.ai`
 3. `langgenius [service name] plugin github`
 
-Use WebSearch for all three queries. Check the results carefully. Look for:
+Use WebSearch for all three queries. Look for marketplace.dify.ai listings, `langgenius` org repos, and `.difypkg` packages.
 
-- Links to marketplace.dify.ai listings
-- GitHub repositories under the `langgenius` organization
-- Community-contributed plugin packages (`.difypkg` files)
+### Step 4 — Check marketplace directly (if web search is ambiguous)
 
-### Step 3 — Check marketplace directly (if web search is ambiguous)
-
-If the web search results are unclear or contradictory, use WebFetch to check:
+If web search results are unclear or contradictory, use WebFetch to check:
 
 ```text
 https://marketplace.dify.ai
 ```
 
-Search for the service name on that page. Note whether the page is accessible (it may not always respond). If inaccessible, record this and proceed based on web search results alone.
+Note whether the page is accessible — it may not always respond. If inaccessible, rely on the GitHub repo results and web search findings.
 
-### Step 4 — Output: plugin found
+### Step 5 — Output: plugin found
 
-If a plugin exists, produce the complete plugin configuration. Follow the exact format below. Use the provider_id, tool_name, and parameter schema from `docs/features/plugins-marketplace.md` if the plugin is documented there. If the plugin was found via web search, use the provider_id and tool_name from the official marketplace listing.
+If a plugin exists, produce the complete plugin configuration. Follow the exact format below. Use the provider_id, tool_name, and parameter schema from `docs/features/plugins-marketplace.md` if the plugin is documented there. If the plugin was found via GitHub repo or web search, use the provider_id and tool_name from that source.
 
-### Step 5 — Output: no plugin found
+### Step 6 — Output: no plugin found
 
-If no plugin exists anywhere (local docs, web search, and marketplace all come up empty), produce the no-plugin report and note that api-researcher should run next.
+If no plugin exists anywhere (local docs, GitHub repos, web search, and marketplace all come up empty), produce the no-plugin report and note that api-researcher should run next.
 
 ---
 
@@ -193,6 +216,8 @@ Use case: [what the workflow needs this service to do]
 
 Search results:
   - docs/features/plugins-marketplace.md: [not listed | listed as: ...]
+  - github.com/langgenius/dify-official-plugins (README): [not listed | listed as: ...]
+  - github.com/langgenius/dify-plugins (README): [not listed | listed as: ...]
   - Web search "[service] dify plugin marketplace": [brief summary of what was found — links, results, or "no relevant results"]
   - Web search "langgenius [service] plugin github": [brief summary]
   - marketplace.dify.ai: [not accessible | checked — no plugin found | found: ...]

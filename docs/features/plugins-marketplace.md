@@ -6,6 +6,24 @@ Marketplace URL: https://marketplace.dify.ai — 120+ plugins available as of 20
 
 ---
 
+## Source Repositories
+
+The authoritative sources for what plugins actually exist are the two official GitHub repositories maintained by the Langgenius team. Use these for lookup before relying on web search.
+
+| Repository | Purpose | URL |
+| --- | --- | --- |
+| `dify-official-plugins` | Official plugins maintained by the Dify core team. These are the most reliable — guaranteed compatible with current Dify versions. | <https://github.com/langgenius/dify-official-plugins> |
+| `dify-plugins` | Community and partner plugins. Broader coverage but varying maintenance quality. | <https://github.com/langgenius/dify-plugins> |
+
+**For plugin-finder:** fetch the README of each repo to discover available plugins:
+
+- `https://raw.githubusercontent.com/langgenius/dify-official-plugins/main/README.md`
+- `https://raw.githubusercontent.com/langgenius/dify-plugins/main/README.md`
+
+Each README lists all plugins in the repo with their names and `provider_id` values. If the service you need appears there, use that `provider_id` in the DSL — it is guaranteed to match what Dify expects at import time.
+
+---
+
 ## Plugin Types
 
 There are 5 distinct plugin types, each serving a different purpose in the Dify ecosystem:
