@@ -3,9 +3,9 @@
   "description": "Generate production-ready Dify DSL YAML files for chatflows and workflows via a guided multi-agent pipeline",
   "version": "0.1.0",
   "author": {
-    "name": "dify-plugin"
+    "name": "A1sh"
   },
-  "homepage": "https://github.com/YOUR_USERNAME/dify-dsl-generator",
-  "repository": "https://github.com/YOUR_USERNAME/dify-dsl-generator",
+  "homepage": "https://github.com/A1sh/dify-dsl-generator",
+  "repository": "https://github.com/A1sh/dify-dsl-generator",
   "license": "MIT"
 }
