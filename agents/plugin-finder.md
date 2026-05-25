@@ -22,7 +22,7 @@ You do NOT generate workflow-level YAML. You do NOT research APIs. You produce o
 
 **Read this file first, before any web fetch or web search:**
 
-- `docs/features/plugins-marketplace.md` — commonly used plugins with full DSL configurations, provider IDs, tool names, and parameter schemas
+- `skills/dify/references/features/plugins-marketplace.md` — commonly used plugins with full DSL configurations, provider IDs, tool names, and parameter schemas
 
 Read this document in full before going to the web. Many services are already documented there with ready-to-use YAML.
 
@@ -39,7 +39,7 @@ Each README lists every plugin in its repo with names and `provider_id` values. 
 
 ### Step 1 — Check local documentation first
 
-Read `docs/features/plugins-marketplace.md` in its entirety. Look for the service name in the list of available plugins. Check for:
+Read `skills/dify/references/features/plugins-marketplace.md` in its entirety. Look for the service name in the list of available plugins. Check for:
 
 - Exact service name match (e.g., "Brave Search", "Firecrawl", "Serper")
 - Alternative names (e.g., "Jina Reader" for "Jina AI")
@@ -89,7 +89,7 @@ Note whether the page is accessible — it may not always respond. If inaccessib
 
 ### Step 5 — Output: plugin found
 
-If a plugin exists, produce the complete plugin configuration. Follow the exact format below. Use the provider_id, tool_name, and parameter schema from `docs/features/plugins-marketplace.md` if the plugin is documented there. If the plugin was found via GitHub repo or web search, use the provider_id and tool_name from that source.
+If a plugin exists, produce the complete plugin configuration. Follow the exact format below. Use the provider_id, tool_name, and parameter schema from `skills/dify/references/features/plugins-marketplace.md` if the plugin is documented there. If the plugin was found via GitHub repo or web search, use the provider_id and tool_name from that source.
 
 ### Step 6 — Output: no plugin found
 
@@ -99,7 +99,7 @@ If no plugin exists anywhere (local docs, GitHub repos, web search, and marketpl
 
 ## Common Plugins Reference
 
-These plugins are confirmed available in the Dify marketplace. Check them by name before searching the web. Full DSL configurations are in `docs/features/plugins-marketplace.md`.
+These plugins are confirmed available in the Dify marketplace. Check them by name before searching the web. Full DSL configurations are in `skills/dify/references/features/plugins-marketplace.md`.
 
 | Service              | Provider ID              | Tool Name          | Primary Input    | Primary Output           |
 | -------------------- | ------------------------ | ------------------ | ---------------- | ------------------------ |
@@ -110,7 +110,7 @@ These plugins are confirmed available in the Dify marketplace. Check them by nam
 | Stability AI         | `langgenius/stability`   | `text2image`       | `prompt` (string)| `files` (image array)    |
 | GitHub               | `langgenius/github`      | `github_get_repo`  | `repo` (string)  | `text` (repo metadata)   |
 
-For Slack, Notion, SendGrid, Stripe, Airtable, Jira, and other services not in this table: check `docs/features/plugins-marketplace.md` first, then do a web search if not listed there.
+For Slack, Notion, SendGrid, Stripe, Airtable, Jira, and other services not in this table: check `skills/dify/references/features/plugins-marketplace.md` first, then do a web search if not listed there.
 
 ---
 
@@ -122,7 +122,7 @@ When a plugin exists, output exactly this block. Replace all bracketed placehold
 === PLUGIN FOUND: [Plugin Name] ===
 Provider ID: [langgenius/plugin-name]
 Tool name: [tool_name]
-Documentation source: [docs/features/plugins-marketplace.md | URL from web search]
+Documentation source: [skills/dify/references/features/plugins-marketplace.md | URL from web search]
 
 Required parameters:
   - [param_name] ([type]): [description of what this parameter expects]
@@ -215,7 +215,7 @@ When no plugin exists after checking all sources, output exactly this block.
 Use case: [what the workflow needs this service to do]
 
 Search results:
-  - docs/features/plugins-marketplace.md: [not listed | listed as: ...]
+  - skills/dify/references/features/plugins-marketplace.md: [not listed | listed as: ...]
   - github.com/langgenius/dify-official-plugins (README): [not listed | listed as: ...]
   - github.com/langgenius/dify-plugins (README): [not listed | listed as: ...]
   - Web search "[service] dify plugin marketplace": [brief summary of what was found — links, results, or "no relevant results"]
@@ -234,7 +234,7 @@ NOTE: api-researcher will research the [Service Name] API. integration-builder w
 
 ## Hard Constraints
 
-- ALWAYS read `docs/features/plugins-marketplace.md` before performing any web search. Local first, web second — always.
+- ALWAYS read `skills/dify/references/features/plugins-marketplace.md` before performing any web search. Local first, web second — always.
 - NEVER skip the plugin check, even if you are confident no plugin exists. Confidence is not a substitute for checking.
 - NEVER call api-researcher directly. Only output the no-plugin report and state that api-researcher is next. The orchestrator handles the handoff.
 - NEVER generate API research, endpoint documentation, or HTTP node YAML. That is api-researcher and integration-builder's job.

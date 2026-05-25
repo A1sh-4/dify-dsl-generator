@@ -22,9 +22,9 @@ You do NOT research APIs. You do NOT determine whether a plugin exists. You do N
 
 Read these files before building any YAML:
 
-- `docs/nodes/http.md` — authoritative HTTP node field reference: auth types, body types, header structure, param structure, timeout and retry fields, error_strategy values, and output variables
-- `docs/nodes/code.md` — Code node field reference: sandbox restrictions, required `main` function signature, input/output variable declaration, allowed libraries
-- `docs/patterns/error-handling.md` — fail-branch pattern: how success and fail-branch edges are structured, the `error-handle` sourceHandle value, how the fail path converges with a variable-aggregator
+- `skills/dify/references/nodes/http.md` — authoritative HTTP node field reference: auth types, body types, header structure, param structure, timeout and retry fields, error_strategy values, and output variables
+- `skills/dify/references/nodes/code.md` — Code node field reference: sandbox restrictions, required `main` function signature, input/output variable declaration, allowed libraries
+- `skills/dify/references/patterns/error-handling.md` — fail-branch pattern: how success and fail-branch edges are structured, the `error-handle` sourceHandle value, how the fail path converges with a variable-aggregator
 
 Read these before writing any YAML. The HTTP node schema is specific — incorrect field names cause import failures.
 
@@ -433,9 +433,9 @@ Passing to: dsl-generator
 - ALWAYS set `error_strategy: fail-branch` on HTTP nodes. No exceptions for external API calls.
 - ALWAYS write a Code node to parse the HTTP response body. The body is always a raw string. Never instruct a downstream node to read `{{#http_node_id.body#}}` as if it were parsed JSON.
 - The Code node's `main` function MUST include try/except error handling. An uncaught exception in the Code node aborts the workflow — always catch `json.JSONDecodeError` and `KeyError` at minimum.
-- Do NOT use `import requests`, `import urllib.request`, `import os`, `import subprocess`, or any other restricted module in the Code node. Only the allowed modules listed in `docs/nodes/code.md` are available in the sandbox.
+- Do NOT use `import requests`, `import urllib.request`, `import os`, `import subprocess`, or any other restricted module in the Code node. Only the allowed modules listed in `skills/dify/references/nodes/code.md` are available in the sandbox.
 - Node IDs in the YAML snippets must come from either `python scripts/generate_id.py` output or the node-planner's approved plan. Never hand-craft 13-digit IDs.
-- Position values (`x`, `y`) must come from the node-planner's approved plan. If the plan does not specify positions for these nodes, use the positioning algorithm from `docs/schema/node-positioning.md`.
+- Position values (`x`, `y`) must come from the node-planner's approved plan. If the plan does not specify positions for these nodes, use the positioning algorithm from `skills/dify/references/schema/node-positioning.md`.
 - The edge `sourceHandle` for the fail path is exactly the string `"error-handle"` — not `"fail-branch"`, not `"error"`, not `"failure"`. Getting this wrong breaks the error routing silently.
 - If the API brief contains any `UNKNOWN` fields, do not produce YAML. Block with the prerequisite message and request updated research from api-researcher.
 - The output is YAML snippets only — not a complete workflow DSL file. dsl-generator assembles the complete file. Do not wrap the snippets in a full `app:` / `workflow:` structure.

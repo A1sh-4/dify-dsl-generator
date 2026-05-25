@@ -1,0 +1,253 @@
+app:
+  description: A research agent chatflow that uses an LLM with structured reasoning
+    instructions to investigate topics across science, law, history, medicine, and
+    the arts — producing well-organized, markdown-formatted answers.
+  icon: "\U0001F52C"
+  icon_background: '#EDE9FE'
+  mode: advanced-chat
+  name: Agent Chatflow
+  use_icon_as_answer_icon: false
+dependencies: []
+kind: app
+version: 0.5.0
+workflow:
+  conversation_variables: []
+  environment_variables: []
+  features:
+    file_upload:
+      allowed_file_extensions:
+        - .JPG
+        - .JPEG
+        - .PNG
+        - .GIF
+        - .WEBP
+        - .SVG
+      allowed_file_types:
+        - image
+      allowed_file_upload_methods:
+        - local_file
+        - remote_url
+      enabled: false
+      fileUploadConfig:
+        attachment_image_file_size_limit: 2
+        audio_file_size_limit: 50
+        batch_count_limit: 5
+        file_size_limit: 15
+        file_upload_limit: 20
+        image_file_batch_limit: 10
+        image_file_size_limit: 5
+        single_chunk_attachment_limit: 10
+        video_file_size_limit: 100
+        workflow_file_upload_limit: 10
+      image:
+        enabled: false
+        number_limits: 3
+        transfer_methods:
+          - local_file
+          - remote_url
+      number_limits: 3
+    opening_statement: |
+      <div style="font-family:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif; max-width:680px; padding:20px; border-radius:12px; box-shadow:0 6px 20px rgba(0,0,0,0.06); background:linear-gradient(180deg,#ffffff,#f8fafc); border:1px solid #e2e8f0;">
+        <div style="display:flex; align-items:center; gap:12px; margin-bottom:12px; padding-bottom:12px; border-bottom:1px solid #eef2f6;">
+          <div style="background:#7c3aed; color:white; font-weight:700; padding:4px 10px; border-radius:6px; font-size:12px; letter-spacing:0.5px;">RESEARCH</div>
+          <div style="color:#0f172a; font-size:14px; font-weight:600;">🔬 Deep-dive research on any topic</div>
+        </div>
+        <div style="font-size:13px; color:#334155; line-height:1.6;">
+          <p style="margin:0 0 10px 0;">Ask any question and this chatflow will investigate thoroughly — drawing on broad knowledge across disciplines to produce structured, well-reasoned answers.</p>
+          <div style="display:flex; flex-wrap:wrap; gap:6px; margin-bottom:14px;">
+            <span style="background:#ede9fe; color:#7c3aed; border:1px solid #c4b5fd; padding:4px 10px; border-radius:20px; font-size:11px; font-weight:600;">🔭 Science & Tech</span>
+            <span style="background:#ede9fe; color:#7c3aed; border:1px solid #c4b5fd; padding:4px 10px; border-radius:20px; font-size:11px; font-weight:600;">⚖️ Law & Policy</span>
+            <span style="background:#ede9fe; color:#7c3aed; border:1px solid #c4b5fd; padding:4px 10px; border-radius:20px; font-size:11px; font-weight:600;">🏛️ History</span>
+            <span style="background:#ede9fe; color:#7c3aed; border:1px solid #c4b5fd; padding:4px 10px; border-radius:20px; font-size:11px; font-weight:600;">🩺 Medicine</span>
+            <span style="background:#ede9fe; color:#7c3aed; border:1px solid #c4b5fd; padding:4px 10px; border-radius:20px; font-size:11px; font-weight:600;">🎨 Arts & Culture</span>
+          </div>
+          <p style="margin:0;">Type your question below to get a structured, well-sourced research answer.</p>
+        </div>
+      </div>
+    retriever_resource:
+      enabled: false
+    sensitive_word_avoidance:
+      enabled: false
+    speech_to_text:
+      enabled: false
+    suggested_questions:
+      - What caused the 2008 financial crisis and what reforms followed?
+      - Explain how mRNA vaccines work and how they differ from traditional vaccines
+      - What are the key differences between common law and civil law legal systems?
+    suggested_questions_after_answer:
+      enabled: false
+    text_to_speech:
+      enabled: false
+      language: ''
+      voice: ''
+  graph:
+    edges:
+      - data:
+          isInLoop: false
+          sourceType: start
+          targetType: llm
+        id: 1718007000001-source-1718007000002-target
+        source: '1718007000001'
+        sourceHandle: source
+        target: '1718007000002'
+        targetHandle: target
+        type: custom
+        zIndex: 0
+      - data:
+          isInLoop: false
+          sourceType: llm
+          targetType: template-transform
+        id: 1718007000002-source-1718007000003-target
+        source: '1718007000002'
+        sourceHandle: source
+        target: '1718007000003'
+        targetHandle: target
+        type: custom
+        zIndex: 0
+      - data:
+          isInLoop: false
+          sourceType: template-transform
+          targetType: answer
+        id: 1718007000003-source-1718007000004-target
+        source: '1718007000003'
+        sourceHandle: source
+        target: '1718007000004'
+        targetHandle: target
+        type: custom
+        zIndex: 0
+    nodes:
+      - data:
+          desc: Entry point — receives the user's research query via the chat input
+          selected: false
+          title: Start
+          type: start
+          variables: []
+        height: 54
+        id: '1718007000001'
+        position:
+          x: 80
+          y: 282
+        positionAbsolute:
+          x: 80
+          y: 282
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          context:
+            enabled: false
+            variable_selector: []
+          desc: Research agent LLM — structured reasoning across science, law, history,
+            medicine, and the arts
+          memory:
+            query_prompt_template: '{{#sys.query#}}'
+            role_prefix:
+              assistant: ''
+              user: ''
+            window:
+              enabled: false
+              size: 50
+          model:
+            completion_params:
+              max_tokens: 4096
+              temperature: 0.5
+            mode: chat
+            name: claude-sonnet-4-6
+            provider: anthropic
+          prompt_template:
+            - edition_type: basic
+              id: 8b8089d4-0415-40f3-8d3b-5b1c6e981a3d
+              role: system
+              text: "You are an expert research agent with broad knowledge across science,\
+                \ technology, history, law, medicine, and the arts.\n\nWhen answering\
+                \ a question, follow this structured approach:\n\n1. **Understand**\
+                \ — Restate the core question in your own words to confirm understanding.\n\
+                2. **Research** — Draw on your knowledge to gather relevant facts,\
+                \ dates, definitions, and context.\n3. **Analyze** — Synthesize the\
+                \ information, identify key themes, and evaluate conflicting viewpoints\
+                \ if any.\n4. **Answer** — Provide a clear, well-structured response\
+                \ with appropriate detail.\n5. **Further reading** — Suggest sources,\
+                \ authors, or search terms the user might consult.\n\nAlways be honest\
+                \ about uncertainty. If you don't know something, say so clearly rather\
+                \ than guessing. Format responses with markdown headings and bullet\
+                \ points where appropriate."
+            - edition_type: basic
+              id: a51ad097-acaf-4dd9-847b-753e01df6aac
+              role: user
+              text: '{{#sys.query#}}'
+          retry_config:
+            max_retries: 3
+            retry_enabled: true
+            retry_interval: 1000
+          selected: false
+          structured_output: {}
+          structured_output_enabled: false
+          title: Research Agent
+          type: llm
+          variables: []
+          vision:
+            enabled: false
+        height: 98
+        id: '1718007000002'
+        position:
+          x: 380
+          y: 282
+        positionAbsolute:
+          x: 380
+          y: 282
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          desc: Passes the LLM's markdown research output through to the answer node
+          selected: false
+          template: '{{ research_output }}'
+          title: Format Research Output
+          type: template-transform
+          variables:
+            - value_selector:
+                - '1718007000002'
+                - text
+              variable: research_output
+        height: 54
+        id: '1718007000003'
+        position:
+          x: 680
+          y: 282
+        positionAbsolute:
+          x: 680
+          y: 282
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          answer: '{{#1718007000003.output#}}'
+          desc: Streams the formatted research response to the user
+          selected: false
+          title: Answer
+          type: answer
+          variables: []
+        height: 107
+        id: '1718007000004'
+        position:
+          x: 980
+          y: 282
+        positionAbsolute:
+          x: 980
+          y: 282
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+    viewport:
+      x: 0
+      y: 0
+      zoom: 1
+  rag_pipeline_variables: []

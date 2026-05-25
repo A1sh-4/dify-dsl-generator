@@ -86,6 +86,37 @@ What does the application produce at the end?
 - `file` — a generated document or processed file
 - `silent (webhook)` — a workflow that sends data elsewhere and has no visible output
 
+### Step 8b — Determine output presentation style
+
+This step only applies when the output format is `streaming text` (chatflows) or `structured JSON` rendered by a template-transform node. It tells the node-planner what kind of template-transform to design and tells the prompt-engineer what format to instruct the LLM to produce.
+
+**Presentation types:**
+
+- `prose` — Free-form markdown text. No special HTML structure. Headings, bullet points, and paragraphs. Use when the output is an explanation, a research answer, a translation, or any open-ended text response.
+- `card` — A styled HTML card with a header badge, body text, and optional pill tags or icons. Use when the output is a single-entity summary, a status report, or a dashboard-style result.
+- `table` — A tabular layout showing rows and columns. Use when the output is a comparison, a list of records with consistent fields (metrics, people, items), or a matrix.
+- `mixed` — Two or more layout types combined (e.g., card header + markdown body, summary card + data table, multiple sections with different formats). Use when the output has clearly distinct parts.
+- `structured-then-rendered` — The LLM returns a JSON object via structured output (not plain text). A template-transform node then reads the JSON fields and renders them into the final UI layout. Use when the output involves multiple named sections, calculated fields, nested data, or when the same LLM output must be rendered in multiple visual formats.
+
+**Inference rules — use these before asking:**
+
+| Context clue in the user's description | Likely presentation |
+|---|---|
+| "extract metrics", "calculate KPIs", "score each item", "analyze data" | `structured-then-rendered` |
+| "answer questions", "research", "explain", "translate", "summarize a topic" | `prose` |
+| "show a summary card", "produce a status report", "display a single result" | `card` |
+| "compare options", "list records", "show a table", "tabular output" | `table` |
+| "generate a report with multiple sections", "dashboard", "combined output" | `mixed` |
+| Mentions multiple distinct output sections with different data types | `structured-then-rendered` or `mixed` |
+
+**When to ask vs infer:**
+- If the description clearly implies a single presentation type, infer it — do not ask.
+- If the description is genuinely ambiguous between `prose` and `card`, default to `prose` (safer, simpler).
+- If the description is ambiguous between `table` and `structured-then-rendered`, default to `structured-then-rendered` (more flexible for complex data).
+- Only use one of your 2 allowed clarifying questions on presentation if the choice would fundamentally change the architecture (e.g., you cannot tell whether the user wants a simple chatbot answer vs a rich structured report).
+
+**Note:** When presentation is `structured-then-rendered`, automatically add "Structured output required" to SPECIAL REQUIREMENTS (Step 9) — these always go together.
+
 ### Step 9 — Note special requirements
 
 Look for any of the following and flag them explicitly:
@@ -159,6 +190,7 @@ RAG QUERY SOURCE: [variable_name or node output that feeds the retrieval query �
 ERROR HANDLING NEEDED: [yes | no]
 
 OUTPUT FORMAT: [streaming text | structured JSON | file | silent (webhook)]
+OUTPUT PRESENTATION: [prose | card | table | mixed | structured-then-rendered]
 
 SPECIAL REQUIREMENTS:
 - [special requirement 1]

@@ -1,0 +1,320 @@
+# =============================================================================
+# DIFY CHATFLOW STARTER TEMPLATE
+# =============================================================================
+# Instructions:
+#   1. Replace every "# TODO:" comment with your actual values.
+#   2. mode must be "advanced-chat" for chatflows — do not change.
+#   3. Terminal node must be "answer" (not "end") for chatflows.
+#   4. The template-transform node (Node 3) renders final HTML output — customize the template.
+#   5. Run: .venv/Scripts/python scripts/validate_workflow.py assets/templates/starter-chatflow.yml
+# =============================================================================
+app:
+  description: "# TODO: One sentence describing what this chatflow does."
+  icon: "🤖"
+  icon_background: "#FFEAD5"        # TODO: Replace with your preferred hex color
+  mode: advanced-chat               # REQUIRED for chatflows — do not change
+  name: "# TODO: Your Chatflow Name"
+  use_icon_as_answer_icon: false
+dependencies: []                    # TODO: Add marketplace plugin entries here if tool nodes use plugins
+kind: app
+version: 0.5.0
+workflow:
+  conversation_variables: []        # TODO: Add conversation variable entries here if tracking state across turns
+  environment_variables: []         # TODO: Add env var entries here for any API keys or secrets
+  features:
+    file_upload:
+      allowed_file_extensions:
+        - .JPG
+        - .JPEG
+        - .PNG
+        - .GIF
+        - .WEBP
+        - .SVG
+      allowed_file_types:
+        - image
+      allowed_file_upload_methods:
+        - local_file
+        - remote_url
+      enabled: false                # TODO: Set true if users can upload files
+      fileUploadConfig:
+        attachment_image_file_size_limit: 2
+        audio_file_size_limit: 50
+        batch_count_limit: 5
+        file_size_limit: 15
+        file_upload_limit: 20
+        image_file_batch_limit: 10
+        image_file_size_limit: 5
+        single_chunk_attachment_limit: 10
+        video_file_size_limit: 100
+        workflow_file_upload_limit: 10
+      image:
+        enabled: false              # TODO: Set true to allow image uploads
+        number_limits: 3
+        transfer_methods:
+          - local_file
+          - remote_url
+      number_limits: 3
+    # TODO: Replace the opening_statement HTML below with content specific to your chatflow.
+    # This is the first thing users see. It must explain what the app does and how to use it.
+    # Use YAML block scalar (|) to keep multi-line HTML readable.
+    #
+    # AVAILABLE COMPONENTS (use any combination):
+    #   Card container: linear-gradient background, box-shadow, border-radius
+    #   Badge header:   colored label chip + title in a flex row
+    #   Pill tags:      <span style="border-radius:20px"> for capability list
+    #   Numbered steps: circle div (border-radius:50%) + step text in flex row
+    #   Quote box:      border-left:4px + background for example/tip content
+    #   SVG icons:      full <svg viewBox="0 0 24 24"><path .../></svg> support
+    #   Emoji:          fully supported anywhere in the HTML
+    #
+    # INTERACTIVE OPTIONS (pick one — or none for free-form chat):
+    #   Option A — Standalone button (sends data-message as user's first message):
+    #     <button data-variant="primary" data-message="Start the analysis">🚀 Start the analysis</button>
+    #     Variants: primary | secondary | secondary-accent | ghost | ghost-accent | warning | tertiary
+    #     Sizes:    data-size="small" | "medium" | "large"
+    #
+    #   Option B — Form (compiles inputs into "field: value" text message on submit):
+    #     <form data-format="text">                          ← always "text", NEVER "json"
+    #       <label>Label</label>
+    #       <input type="text"     name="field" placeholder="..." required />
+    #       <input type="email"    name="field" />
+    #       <input type="number"   name="field" />
+    #       <input type="date"     name="field" />
+    #       <input type="time"     name="field" />
+    #       <input type="select"   name="field" value="Default" data-options='["A","B","C"]' />
+    #       <input type="checkbox" name="field" />
+    #       <textarea name="field"></textarea>
+    #       <button data-variant="primary">Submit</button>   ← inside form: always submits
+    #     </form>
+    #
+    # DECISION GUIDE:
+    #   User types freely (Q&A, research, analysis)     → no button, end with plain instruction
+    #   One clear start action, no input needed         → standalone button with data-message
+    #   Structured input required before flow can run  → form with inputs + submit button
+    opening_statement: |
+      <div style="font-family:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif; max-width:680px; padding:20px; border-radius:12px; box-shadow:0 6px 20px rgba(0,0,0,0.06); background:linear-gradient(180deg,#ffffff,#f8fafc); border:1px solid #e2e8f0;">
+        <div style="display:flex; align-items:center; gap:12px; margin-bottom:12px; padding-bottom:12px; border-bottom:1px solid #eef2f6;">
+          <div style="background:#0369a1; color:white; font-weight:700; padding:4px 10px; border-radius:6px; font-size:12px; letter-spacing:0.5px;">TODO: App Label</div>
+          <div style="color:#0f172a; font-size:14px; font-weight:600;">TODO: 🤖 One-line description of what this chatflow does</div>
+        </div>
+        <div style="font-size:13px; color:#334155; line-height:1.6;">
+          <p style="margin:0 0 10px 0;">TODO: 2-3 sentences explaining the chatflow purpose and who it is for.</p>
+          <div style="display:flex; flex-wrap:wrap; gap:6px; margin-bottom:14px;">
+            <span style="background:#e0f2fe; color:#0284c7; border:1px solid #bae6fd; padding:4px 10px; border-radius:20px; font-size:11px; font-weight:600;">TODO: Capability 1</span>
+            <span style="background:#e0f2fe; color:#0284c7; border:1px solid #bae6fd; padding:4px 10px; border-radius:20px; font-size:11px; font-weight:600;">TODO: Capability 2</span>
+            <span style="background:#e0f2fe; color:#0284c7; border:1px solid #bae6fd; padding:4px 10px; border-radius:20px; font-size:11px; font-weight:600;">TODO: Capability 3</span>
+          </div>
+          <p style="margin:0;">TODO: Exact instruction for the user — e.g. "Type your question below to get started." or use a button/form above instead.</p>
+        </div>
+      </div>
+    retriever_resource:
+      enabled: false                # TODO: Set true to show retrieval citations in the UI
+    sensitive_word_avoidance:
+      enabled: false
+    speech_to_text:
+      enabled: false
+    suggested_questions:            # TODO: Replace with 2-3 realistic example inputs for this chatflow
+      - "TODO: Example question 1 — make it realistic and specific to the use case"
+      - "TODO: Example question 2"
+      - "TODO: Example question 3 (optional — remove this line if only 2 examples)"
+    suggested_questions_after_answer:
+      enabled: false
+    text_to_speech:
+      enabled: false
+      language: ""
+      voice: ""
+  graph:
+    edges:
+      # Edge 1: Start → LLM
+      - data:
+          isInLoop: false
+          sourceType: start
+          targetType: llm
+        id: "1718010000001-source-1718010000002-target"
+        source: "1718010000001"
+        sourceHandle: source
+        target: "1718010000002"
+        targetHandle: target
+        type: custom
+        zIndex: 0
+      # Edge 2: LLM → Template Transform
+      - data:
+          isInLoop: false
+          sourceType: llm
+          targetType: template-transform
+        id: "1718010000002-source-1718010000003-target"
+        source: "1718010000002"
+        sourceHandle: source
+        target: "1718010000003"
+        targetHandle: target
+        type: custom
+        zIndex: 0
+      # Edge 3: Template Transform → Answer
+      - data:
+          isInLoop: false
+          sourceType: template-transform
+          targetType: answer
+        id: "1718010000003-source-1718010000004-target"
+        source: "1718010000003"
+        sourceHandle: source
+        target: "1718010000004"
+        targetHandle: target
+        type: custom
+        zIndex: 0
+    nodes:
+      # -----------------------------------------------------------------
+      # NODE 1: Start
+      # In advanced-chat mode, the user's chat message is available as
+      # {{#sys.query#}} — no variable declaration needed for that.
+      # Add extra variables below only for structured inputs (dropdowns,
+      # file uploads, etc.) beyond the main chat message.
+      # -----------------------------------------------------------------
+      - data:
+          desc: ""
+          selected: false
+          title: "Start"
+          type: start
+          variables: []             # TODO: Add extra input variables if needed (e.g. language selector, file upload)
+        height: 54
+        id: "1718010000001"         # TODO: Replace with output of: .venv/Scripts/python scripts/generate_id.py
+        position:
+          x: 80
+          y: 282
+        positionAbsolute:
+          x: 80
+          y: 282
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+
+      # -----------------------------------------------------------------
+      # NODE 2: LLM
+      # Processes the user query and produces the response content.
+      # The output (text field) feeds the template-transform node below.
+      # -----------------------------------------------------------------
+      - data:
+          context:
+            enabled: false          # TODO: Set true + configure variable_selector if using a knowledge base
+            variable_selector: []
+          desc: ""
+          memory:
+            query_prompt_template: "{{#sys.query#}}"
+            role_prefix:
+              assistant: ""
+              user: ""
+            window:
+              enabled: false
+              size: 50
+          model:
+            completion_params:
+              temperature: 0.7      # TODO: Lower (0.1-0.3) for factual/extraction tasks; higher (0.8-1.2) for creative
+            mode: chat
+            name: claude-sonnet-4-6  # TODO: Replace with desired model if needed
+            provider: anthropic
+          prompt_template:
+            - edition_type: basic
+              id: "00000000-0000-0000-0000-000000000001"  # TODO: Replace with a real UUIDv4
+              role: system
+              text: |
+                TODO: Write a specific system prompt here. Do NOT use "You are a helpful assistant."
+                Instead, define: (1) the specific role, (2) the task this node performs, (3) the output
+                format (plain text, JSON, bullet list, etc.), and (4) any behavioral constraints.
+            - edition_type: basic
+              id: "00000000-0000-0000-0000-000000000002"  # TODO: Replace with a real UUIDv4
+              role: user
+              text: "{{#sys.query#}}"   # TODO: Add other upstream variable injections if needed
+          retry_config:
+            max_retries: 3
+            retry_enabled: true
+            retry_interval: 1000
+          selected: false
+          structured_output: {}       # TODO: Replace with JSON schema if structured output is needed; otherwise leave as {}
+          structured_output_enabled: false  # TODO: Set true when LLM must return named JSON fields
+          title: "LLM"              # TODO: Give this node a descriptive name (e.g. "Generate Answer", "Extract Fields")
+          type: llm
+          variables: []
+          vision:
+            enabled: false          # TODO: Set true if accepting image inputs (also enable file_upload above)
+        height: 98
+        id: "1718010000002"         # TODO: Replace with output of: .venv/Scripts/python scripts/generate_id.py
+        position:
+          x: 380
+          y: 282
+        positionAbsolute:
+          x: 380
+          y: 282
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+
+      # -----------------------------------------------------------------
+      # NODE 3: Template Transform
+      # Renders the LLM output into styled HTML for the user interface.
+      # Jinja2 syntax: {{ var }} for values, {% if %}, {% for %} for logic.
+      # Do NOT use {{# #}} Dify reference syntax inside the template string.
+      # The variables array maps upstream node outputs to template variables.
+      # -----------------------------------------------------------------
+      - data:
+          desc: ""
+          selected: false
+          template: |
+            <div style="background:#f8f9fa;border-radius:8px;padding:16px;font-family:sans-serif;line-height:1.6;">
+              <h3 style="margin:0 0 12px 0;color:#1a1a2e;font-size:16px;">TODO: Response Title</h3>
+              <p style="margin:0 0 12px 0;color:#333;">{{ llm_output }}</p>
+            </div>
+          title: "Format Output"    # TODO: Rename to reflect what this node renders
+          type: template-transform
+          variables:
+            - value_selector:
+                - "1718010000002"   # TODO: Update to the actual LLM node ID
+                - text
+              variable: llm_output  # TODO: Must match the {{ llm_output }} reference in the template above
+        height: 54
+        id: "1718010000003"         # TODO: Replace with output of: .venv/Scripts/python scripts/generate_id.py
+        position:
+          x: 680
+          y: 282
+        positionAbsolute:
+          x: 680
+          y: 282
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+
+      # -----------------------------------------------------------------
+      # NODE 4: Answer
+      # Streams the formatted HTML from template-transform to the user.
+      # Always reference template-transform output here — NOT raw LLM text.
+      # This is the chatflow terminal node — do not replace with "end".
+      # -----------------------------------------------------------------
+      - data:
+          answer: "{{#1718010000003.output#}}"  # TODO: Update node ID to match your template-transform node ID
+          desc: ""
+          selected: false
+          title: "Answer"
+          type: answer              # REQUIRED for chatflows — do not change to "end"
+          variables: []
+        height: 107
+        id: "1718010000004"         # TODO: Replace with output of: .venv/Scripts/python scripts/generate_id.py
+        position:
+          x: 980
+          y: 282
+        positionAbsolute:
+          x: 980
+          y: 282
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+    viewport:
+      x: 0
+      y: 0
+      zoom: 1
+  rag_pipeline_variables: []

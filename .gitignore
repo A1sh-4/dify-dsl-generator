@@ -1,14 +1,30 @@
+# Virtual environment — always run scripts via .venv/Scripts/python
+.venv/
+venv/
+ENV/
+env/
+
+# Temporary plans, notes, scratch files (store here, never commit)
+plans/
+tmp/
+temp/
+*.tmp
+
 # Secrets and local config
 *.local.json
 .env
 *.env.*
 
-# Python cache
+# Python cache and test artifacts
 __pycache__/
 *.pyc
 *.pyo
 *.pyd
 .Python
+.pytest_cache/
+*.egg-info/
+dist/
+build/
 
 # Generated DSL output (user-generated files, not part of the plugin)
 output/

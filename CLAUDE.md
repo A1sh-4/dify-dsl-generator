@@ -47,26 +47,29 @@ CRITICAL: When executing the /dify skill, Claude MUST always spawn agents in thi
 - NEVER embed API keys, secrets, or credentials in generated YAML. All sensitive values must reference environment variables using the `{{env.VARIABLE_NAME}}` syntax supported by Dify.
 - ALWAYS use the `scripts/generate_id.py` utility when creating node IDs to ensure they conform to the required format and are collision-free.
 - ALWAYS run `scripts/format_yaml.py` on the output before presenting it to the user to ensure consistent indentation and field ordering.
+- ALWAYS run ALL Python scripts using the project virtual environment — never the global Python installation. The venv is at `.venv/` in this directory. Correct invocation: `.venv/Scripts/python scripts/validate_workflow.py [args]`. Never use `python` or `python3` bare commands.
 
 ## Project Structure
 
-- `skills/` — contains the `/dify` slash command definition. This is the entry point users invoke. It orchestrates the agent pipeline and manages the conversational flow.
+- `skills/dify/` — contains the `/dify` skill entry point (`SKILL.md`), all reference documentation (`references/`), and ground-truth YAML examples (`assets/`). This is the self-contained skill folder that follows the agentskills.io standard.
 - `agents/` — contains 10 specialized agent definition files, one per pipeline step. Each agent has a focused system prompt, tool access list, and output schema.
 - `hooks/` — contains the post-write hook that auto-triggers dsl-validator whenever a YAML file is saved to `output/`. Ensures no invalid DSL is silently produced.
-- `scripts/` — Python utility scripts: `generate_id.py` (UUID generation in Dify node format), `validate_workflow.py` (schema and reference validation), `format_yaml.py` (YAML normalization and formatting).
-- `docs/` — reference documentation organized by category: node types, LLM configuration, DSL schema, common patterns, and Dify marketplace plugin information. Agents consult these docs during generation.
-- `assets/` — example YAML files and templates organized into `chatflows/` and `workflows/` subdirectories. These serve as ground-truth examples that dsl-generator uses as structural references.
+- `scripts/` — Python utility scripts: `generate_id.py` (UUID generation in Dify node format), `validate_workflow.py` (schema and reference validation), `format_yaml.py` (YAML normalization and formatting). Always run via `.venv/Scripts/python`.
+- `skills/dify/references/` — reference documentation organized by category: node types, LLM configuration, DSL schema, common patterns, and Dify marketplace plugin information. Agents consult these docs during generation.
+- `skills/dify/assets/` — example YAML files and templates organized into `chatflows/`, `workflows/`, and `templates/` subdirectories. These serve as ground-truth examples that dsl-generator uses as structural references.
+- `.venv/` — project-local Python virtual environment. All Python execution must use `.venv/Scripts/python`. Run `python -m venv .venv` to recreate if missing, then `pip install pyyaml pytest` to install dependencies.
+- `TODO.md` — tracked improvement tasks for the plugin. Check this file to see what's pending and mark items complete as work is done.
 
 ## Documentation Reference
 
-- Node types: `docs/nodes/` — one file per node type covering required fields, optional fields, and configuration examples.
-- LLM configuration: `docs/config/llm-settings.md` — covers model selection, temperature, max tokens, context window, and vision settings.
-- Schema reference: `docs/schema/` — the authoritative DSL schema for both chatflow and workflow formats, including top-level fields and node-level fields.
-- Common patterns: `docs/patterns/` — reusable design patterns such as RAG pipelines, tool-use loops, human-in-the-loop branching, and multi-step classification.
-- Plugin info: `docs/features/plugins-marketplace.md` — how to discover, reference, and configure Dify marketplace plugins within a DSL file.
+- Node types: `skills/dify/references/nodes/` — one file per node type covering required fields, optional fields, and configuration examples.
+- LLM configuration: `skills/dify/references/config/llm-settings.md` — covers model selection, temperature, max tokens, context window, and vision settings.
+- Schema reference: `skills/dify/references/schema/` — the authoritative DSL schema for both chatflow and workflow formats, including top-level fields and node-level fields.
+- Common patterns: `skills/dify/references/patterns/` — reusable design patterns such as RAG pipelines, tool-use loops, human-in-the-loop branching, and multi-step classification.
+- Plugin info: `skills/dify/references/features/plugins-marketplace.md` — how to discover, reference, and configure Dify marketplace plugins within a DSL file.
 
 ## Sources
 
 - Official Dify documentation: https://docs.dify.ai
-- Ground-truth YAML examples that reflect actual importable DSL structure: `assets/workflows/` and `assets/chatflows/`
+- Ground-truth YAML examples that reflect actual importable DSL structure: `skills/dify/assets/workflows/` and `skills/dify/assets/chatflows/`
 - When documentation is insufficient or outdated, agents may use WebFetch to retrieve current documentation from docs.dify.ai or raw.githubusercontent.com.

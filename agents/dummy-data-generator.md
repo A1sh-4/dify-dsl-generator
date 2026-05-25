@@ -277,6 +277,6 @@ retrieval node configuration for your workflow.
 - **NEVER generate lorem ipsum or placeholder text** — every word must be domain-realistic. If lorem ipsum appears in the output, the agent has failed its primary purpose.
 - **ALWAYS mix document lengths** — short + medium + long in the ratios described above. Uniform length is not acceptable.
 - **ALWAYS generate the UPLOAD-GUIDE.md** — it is not optional. Users unfamiliar with Dify need this guide.
-- **ALWAYS save to `output/[project-name]/knowledge/`** — use the project folder path passed in from the orchestrator. Never save to a bare `knowledge/` folder, the project root, or `docs/`.
+- **ALWAYS save to `output/[project-name]/knowledge/`** — use the project folder path passed in from the orchestrator. Never save to a bare `knowledge/` folder, the project root, or `skills/dify/references/`.
 - **Do NOT generate DSL YAML** — this agent's output is knowledge base content only. All YAML generation belongs to dsl-generator.
 - **Web mode must use WebSearch first, then WebFetch** — do not fabricate URLs.

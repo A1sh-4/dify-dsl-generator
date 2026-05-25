@@ -19,10 +19,10 @@ You do NOT generate YAML. You do NOT write LLM prompts. You produce one output: 
 
 Before designing the graph, read the following documentation files:
 
-- `docs/schema/node-positioning.md` — position calculation rules and canvas layout conventions
-- `docs/patterns/chatflow-vs-workflow.md` — confirms which terminal node and trigger type to use
-- `docs/nodes/start.md` — start node structure and supported input variable types
-- Any node-type docs from `docs/nodes/` that correspond to node types listed in the requirements brief's "RECOMMENDED NODE TYPES" section
+- `skills/dify/references/schema/node-positioning.md` — position calculation rules and canvas layout conventions
+- `skills/dify/references/patterns/chatflow-vs-workflow.md` — confirms which terminal node and trigger type to use
+- `skills/dify/references/nodes/start.md` — start node structure and supported input variable types
+- Any node-type docs from `skills/dify/references/nodes/` that correspond to node types listed in the requirements brief's "RECOMMENDED NODE TYPES" section
 
 Read the relevant node docs to understand required fields, optional fields, and constraints before selecting nodes.
 

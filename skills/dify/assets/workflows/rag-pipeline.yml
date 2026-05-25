@@ -1,0 +1,212 @@
+app:
+  description: A Retrieval-Augmented Generation (RAG) pipeline that retrieves relevant
+    knowledge base documents and uses them as context for an LLM answer.
+  icon: 🤖
+  icon_background: '#FFEAD5'
+  mode: workflow
+  name: RAG Pipeline Workflow
+  use_icon_as_answer_icon: false
+kind: app
+version: 0.5.0
+dependencies: []
+workflow:
+  conversation_variables: []
+  environment_variables: []
+  features:
+    file_upload:
+      enabled: false
+      image:
+        enabled: false
+        number_limits: 3
+        transfer_methods:
+        - local_file
+        - remote_url
+    opening_statement: ''
+    retriever_resource:
+      enabled: true
+    sensitive_word_avoidance:
+      enabled: false
+    speech_to_text:
+      enabled: false
+    suggested_questions: []
+    suggested_questions_after_answer:
+      enabled: false
+    text_to_speech:
+      enabled: false
+      language: ''
+      voice: ''
+  graph:
+    edges:
+    - data:
+        isInIteration: false
+        sourceType: start
+        targetType: knowledge-retrieval
+      id: 1718004000001-source-1718004000002-target
+      selected: false
+      source: '1718004000001'
+      sourceHandle: source
+      target: '1718004000002'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        sourceType: knowledge-retrieval
+        targetType: llm
+      id: 1718004000002-source-1718004000003-target
+      selected: false
+      source: '1718004000002'
+      sourceHandle: source
+      target: '1718004000003'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        sourceType: llm
+        targetType: end
+      id: 1718004000003-source-1718004000004-target
+      selected: false
+      source: '1718004000003'
+      sourceHandle: source
+      target: '1718004000004'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    nodes:
+    - data:
+        desc: Accepts the user's question for knowledge retrieval
+        selected: false
+        title: Start
+        type: start
+        variables:
+        - label: Your question
+          max_length: 2048
+          options: []
+          required: true
+          type: text-input
+          variable: user_question
+      height: 90
+      id: '1718004000001'
+      position:
+        x: 80
+        y: 282
+      positionAbsolute:
+        x: 80
+        y: 282
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        dataset_ids:
+        - YOUR_DATASET_ID_HERE
+        desc: Retrieves the top-5 most relevant document chunks from the knowledge
+          base
+        multiple_retrieval_config:
+          reranking_enable: false
+          score_threshold: 0.5
+          top_k: 5
+        query_variable_selector:
+        - '1718004000001'
+        - user_question
+        retrieval_mode: semantic_search
+        selected: false
+        single_retrieval_config:
+          model:
+            completion_params:
+              max_tokens: 512
+              temperature: 0.1
+            mode: chat
+            name: claude-haiku-4-5-20251001
+            provider: anthropic
+        title: Knowledge Retrieval
+        type: knowledge-retrieval
+      height: 98
+      id: '1718004000002'
+      position:
+        x: 380
+        y: 282
+      positionAbsolute:
+        x: 380
+        y: 282
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        context:
+          enabled: true
+          variable_selector:
+          - '1718004000002'
+          - result
+        desc: Answers the question using only the retrieved context
+        model:
+          completion_params:
+            max_tokens: 2048
+            temperature: 0.3
+          mode: chat
+          name: claude-sonnet-4-6
+          provider: anthropic
+        prompt_template:
+        - role: system
+          text: 'You are a helpful assistant. Answer based ONLY on the provided context.
+
+            If the context does not contain the answer, say "I don''t have information
+            about that."
+
+            Always cite which document the information came from.
+
+            '
+          id: 87ba025f-7ecb-4fad-b675-798533ec5497
+        - role: user
+          text: '{{#1718004000001.user_question#}}'
+          id: 6bb8d67b-fb3c-422f-9637-03570ca7b5d4
+        selected: false
+        title: RAG Answer
+        type: llm
+        vision:
+          enabled: false
+      height: 98
+      id: '1718004000003'
+      position:
+        x: 680
+        y: 282
+      positionAbsolute:
+        x: 680
+        y: 282
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        desc: Returns the grounded answer
+        outputs:
+        - value_selector:
+          - '1718004000003'
+          - text
+          variable: answer
+        selected: false
+        title: End
+        type: end
+      height: 54
+      id: '1718004000004'
+      position:
+        x: 980
+        y: 282
+      positionAbsolute:
+        x: 980
+        y: 282
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    viewport:
+      x: 0
+      y: 0
+      zoom: 1
+  rag_pipeline_variables: []

@@ -1,12 +1,14 @@
 """
-validate_workflow.py - Validate a Dify DSL workflow YAML file.
+validate_workflow.py — Validate a Dify DSL workflow YAML file.
+
+Based on ground-truth analysis of 12 real Dify exports (reference_dsls/).
 
 Usage:
-    python validate_workflow.py <path/to/workflow.yaml> [--verbose]
+    python scripts/validate_workflow.py <path/to/workflow.yaml> [--verbose]
 
 Exit codes:
-    0  All validation checks passed.
-    1  One or more validation checks failed (errors printed to stdout).
+    0  All checks passed.
+    1  One or more checks failed (errors printed to stdout).
 """
 
 import argparse
@@ -21,7 +23,7 @@ import yaml
 # ---------------------------------------------------------------------------
 
 def _collect_strings(obj):
-    """Recursively yield every string value found in a nested dict/list."""
+    """Recursively yield every string value in a nested dict/list."""
     if isinstance(obj, str):
         yield obj
     elif isinstance(obj, dict):
@@ -32,11 +34,15 @@ def _collect_strings(obj):
             yield from _collect_strings(item)
 
 
-_VAR_REF_RE = re.compile(r'\{\{#([^.#]+)\.[^#]+#\}\}')
+# Matches {{#prefix.rest#}} — captures the prefix (node_id or system prefix)
+_VAR_REF_RE = re.compile(r'\{\{#([^.#]+)\.[^#]*#\}\}')
+
+# Dify built-in variable prefixes that are NOT node IDs
+_SYSTEM_PREFIXES = {"sys", "env", "conversation"}
 
 
 def find_variable_references(obj):
-    """Return a list of (node_id, full_ref) tuples found in all string values."""
+    """Return list of (prefix, full_ref) for all {{#prefix.x#}} found in obj."""
     refs = []
     for s in _collect_strings(obj):
         for m in _VAR_REF_RE.finditer(s):
@@ -44,37 +50,151 @@ def find_variable_references(obj):
     return refs
 
 
+def _get_node_data_type(node):
+    """Return the node type string from either data.type or top-level type."""
+    if isinstance(node, dict):
+        data = node.get("data", {})
+        if isinstance(data, dict):
+            t = data.get("type")
+            if t:
+                return str(t)
+        return str(node.get("type", ""))
+    return ""
+
+
 # ---------------------------------------------------------------------------
 # Validation
 # ---------------------------------------------------------------------------
 
-def validate(data: dict, verbose: bool) -> list:
-    """Run all validation checks and return a list of error strings."""
+def validate(data: dict, verbose: bool = False) -> list:
+    """Run all validation checks. Return list of error strings (empty = pass)."""
     errors = []
 
     # ------------------------------------------------------------------
-    # 1. Top-level required keys
+    # 1. Top-level required keys: app, kind, version, workflow, dependencies
     # ------------------------------------------------------------------
     required_top = {"app", "kind", "version", "workflow"}
     missing_top = required_top - set(data.keys())
     if missing_top:
         errors.append(f"Missing top-level keys: {sorted(missing_top)}")
 
+    if "dependencies" not in data:
+        errors.append(
+            "'dependencies' key is missing at top level — must be present "
+            "(use '[]' if no plugins required)."
+        )
+
     # ------------------------------------------------------------------
-    # 2. workflow.graph exists
+    # 2. version must be unquoted 0.5.0 or 0.6.0
+    # ------------------------------------------------------------------
+    version = data.get("version")
+    if version is not None:
+        version_str = str(version)
+        if version_str not in ("0.5.0", "0.6.0"):
+            errors.append(
+                f"'version' is '{version_str}' — Dify expects 0.5.0 (unquoted). "
+                "Wrong version causes 'caution: different versions' on import."
+            )
+    else:
+        errors.append("'version' is missing.")
+
+    # ------------------------------------------------------------------
+    # 3. kind must be 'app'
+    # ------------------------------------------------------------------
+    kind = data.get("kind")
+    if kind is not None and str(kind) != "app":
+        errors.append(f"'kind' must be 'app', got '{kind}'.")
+
+    # ------------------------------------------------------------------
+    # 4. app block checks
+    # ------------------------------------------------------------------
+    app = data.get("app")
+    if isinstance(app, dict):
+        mode = app.get("mode")
+        if mode not in ("workflow", "advanced-chat"):
+            errors.append(
+                f"'app.mode' must be 'workflow' or 'advanced-chat', got '{mode}'."
+            )
+    elif app is not None:
+        errors.append("'app' must be a mapping.")
+
+    # ------------------------------------------------------------------
+    # 5. workflow block
     # ------------------------------------------------------------------
     workflow = data.get("workflow")
     if not isinstance(workflow, dict):
-        errors.append("'workflow' is missing or not a mapping — skipping graph checks.")
-        return errors  # Cannot proceed without workflow
+        errors.append("'workflow' is missing or not a mapping — skipping sub-checks.")
+        return errors
 
+    # 5a. conversation_variables must be present
+    if "conversation_variables" not in workflow:
+        errors.append(
+            "'workflow.conversation_variables' is missing — must be present "
+            "(use '[]' if none). Its absence causes Dify import errors."
+        )
+
+    # 5b. environment_variables must be present
+    if "environment_variables" not in workflow:
+        errors.append(
+            "'workflow.environment_variables' is missing — must be present "
+            "(use '[]' if none). Its absence causes Dify import errors."
+        )
+
+    # 5c. rag_pipeline_variables must be present
+    if "rag_pipeline_variables" not in workflow:
+        errors.append(
+            "'workflow.rag_pipeline_variables' is missing — must be present "
+            "(use '[]' if none)."
+        )
+
+    # 5d. features must be present and be a dict
+    features = workflow.get("features")
+    if features is None:
+        errors.append(
+            "'workflow.features' is missing — its absence causes Dify to crash "
+            "with 'An unexpected error occurred while rendering this component'."
+        )
+    elif not isinstance(features, dict):
+        errors.append("'workflow.features' must be a mapping (dict).")
+    else:
+        # 5d-i. fileUploadConfig must have required keys
+        file_upload = features.get("file_upload", {})
+        if isinstance(file_upload, dict):
+            fuc = file_upload.get("fileUploadConfig")
+            if fuc is not None and isinstance(fuc, dict):
+                required_fuc_keys = {
+                    "audio_file_size_limit",
+                    "batch_count_limit",
+                    "file_size_limit",
+                    "image_file_size_limit",
+                    "single_chunk_attachment_limit",
+                    "video_file_size_limit",
+                    "workflow_file_upload_limit",
+                }
+                missing_fuc = required_fuc_keys - set(fuc.keys())
+                if missing_fuc:
+                    errors.append(
+                        f"'workflow.features.file_upload.fileUploadConfig' is missing "
+                        f"required keys: {sorted(missing_fuc)}"
+                    )
+
+    # ------------------------------------------------------------------
+    # 6. graph block
+    # ------------------------------------------------------------------
     graph = workflow.get("graph")
     if not isinstance(graph, dict):
         errors.append("'workflow.graph' is missing or not a mapping — skipping node/edge checks.")
-        return errors  # Cannot proceed without graph
+        return errors
+
+    # 6a. viewport required
+    if "viewport" not in graph:
+        errors.append(
+            "'workflow.graph.viewport' is missing — must be present as "
+            "'{x: 0, y: 0, zoom: 1}'. Its absence causes layout issues."
+        )
 
     # ------------------------------------------------------------------
-    # 3. workflow.graph.nodes is a non-empty list
+    # 7. nodes
     # ------------------------------------------------------------------
     nodes = graph.get("nodes")
     if not isinstance(nodes, list):
@@ -83,117 +203,179 @@ def validate(data: dict, verbose: bool) -> list:
     elif len(nodes) == 0:
         errors.append("'workflow.graph.nodes' is empty — at least one node is required.")
 
+    node_ids = []
+    node_id_set = set()
+    node_type_map = {}  # id -> type string
+
+    for node in nodes:
+        if not isinstance(node, dict):
+            continue
+        nid = node.get("id")
+        if nid is not None:
+            nid_str = str(nid)
+            node_ids.append(nid_str)
+            node_id_set.add(nid_str)
+            node_type_map[nid_str] = _get_node_data_type(node)
+
+    # 7a. Unique node IDs
+    seen = {}
+    for nid in node_ids:
+        seen[nid] = seen.get(nid, 0) + 1
+    duplicates = [nid for nid, count in seen.items() if count > 1]
+    if duplicates:
+        errors.append(f"Duplicate node IDs: {duplicates}")
+
     # ------------------------------------------------------------------
-    # 4. workflow.graph.edges is a list
+    # 8. edges
     # ------------------------------------------------------------------
     edges = graph.get("edges")
     if not isinstance(edges, list):
         errors.append("'workflow.graph.edges' is missing or not a list.")
         edges = []
 
-    # Build a map from node id -> node for subsequent checks
-    node_ids = []
-    node_id_set = set()
-    for node in nodes:
-        if isinstance(node, dict):
-            nid = node.get("id")
-            if nid is not None:
-                node_ids.append(nid)
-                node_id_set.add(str(nid))
-
-    # ------------------------------------------------------------------
-    # 5. All node IDs are unique
-    # ------------------------------------------------------------------
-    seen_ids = {}
-    for nid in node_ids:
-        key = str(nid)
-        seen_ids[key] = seen_ids.get(key, 0) + 1
-    duplicates = [nid for nid, count in seen_ids.items() if count > 1]
-    if duplicates:
-        errors.append(f"Duplicate node IDs found: {duplicates}")
-
-    # ------------------------------------------------------------------
-    # 6 & 7. Every edge source/target references an existing node ID
-    # 8. No self-loop edges
-    # ------------------------------------------------------------------
     for i, edge in enumerate(edges):
         if not isinstance(edge, dict):
-            errors.append(f"Edge at index {i} is not a mapping.")
+            errors.append(f"Edge[{i}] is not a mapping.")
             continue
-
         src = str(edge.get("source", ""))
         tgt = str(edge.get("target", ""))
 
         if src and src not in node_id_set:
-            errors.append(
-                f"Edge[{i}] source '{src}' does not reference an existing node ID."
-            )
+            errors.append(f"Edge[{i}] source '{src}' references unknown node ID.")
         if tgt and tgt not in node_id_set:
-            errors.append(
-                f"Edge[{i}] target '{tgt}' does not reference an existing node ID."
-            )
+            errors.append(f"Edge[{i}] target '{tgt}' references unknown node ID.")
         if src and tgt and src == tgt:
-            errors.append(
-                f"Edge[{i}] is a self-loop (source == target == '{src}')."
-            )
+            errors.append(f"Edge[{i}] is a self-loop (source == target == '{src}').")
+
+        # 8a. edge type must be 'custom'
+        edge_type = edge.get("type")
+        if edge_type is not None and str(edge_type) != "custom":
+            errors.append(f"Edge[{i}] 'type' must be 'custom', got '{edge_type}'.")
 
     # ------------------------------------------------------------------
-    # 9. workflow.environment_variables must be present (list)
+    # 9. At least one 'start' node
     # ------------------------------------------------------------------
-    if "environment_variables" not in workflow:
-        errors.append(
-            "'workflow.environment_variables' is missing - must be present as [] even if empty. "
-            "Its absence causes Dify to crash with 'An unexpected error occurred while rendering this component'."
-        )
-
-    # ------------------------------------------------------------------
-    # 10. workflow.features must be present (not missing, not null)
-    # ------------------------------------------------------------------
-    features = workflow.get("features")
-    if features is None:
-        errors.append(
-            "'workflow.features' is missing - must be present with at least file_upload, retriever_resource, etc. "
-            "Its absence causes Dify to crash with 'An unexpected error occurred while rendering this component'."
-        )
-    elif not isinstance(features, dict):
-        errors.append("'workflow.features' must be a mapping (dict), not a scalar value.")
-
-    # ------------------------------------------------------------------
-    # 12. At least one node with type 'start'
-    # ------------------------------------------------------------------
-    node_types = [
-        str(node.get("data", {}).get("type", node.get("type", "")))
-        for node in nodes
-        if isinstance(node, dict)
-    ]
+    node_types = list(node_type_map.values())
     if "start" not in node_types:
-        errors.append("No node with type 'start' found — a workflow must have a start node.")
+        errors.append("No node with type 'start' found — every flow needs a start node.")
 
     # ------------------------------------------------------------------
-    # 13. At least one node with type 'end' or 'answer'
+    # 10. At least one terminal node (end or answer)
     # ------------------------------------------------------------------
     if "end" not in node_types and "answer" not in node_types:
         errors.append(
-            "No node with type 'end' or 'answer' found — "
-            "a workflow must have a terminal node."
+            "No terminal node ('end' or 'answer') found. "
+            "Workflows need 'end'; chatflows need 'answer'."
         )
 
     # ------------------------------------------------------------------
-    # 14. Variable references use existing node IDs
+    # 11. Mode/terminal-type consistency
     # ------------------------------------------------------------------
-    bad_refs = []
-    for ref_node_id, full_ref in find_variable_references(data):
-        if ref_node_id not in node_id_set:
-            bad_refs.append((ref_node_id, full_ref))
-
-    if bad_refs:
-        for ref_node_id, full_ref in bad_refs:
+    if isinstance(app, dict):
+        mode = app.get("mode")
+        if mode == "workflow" and "answer" in node_types and "end" not in node_types:
             errors.append(
-                f"Variable reference {full_ref!r} uses unknown node ID '{ref_node_id}'."
+                "App mode is 'workflow' but only 'answer' node found — "
+                "workflows must use 'end' nodes, not 'answer'."
+            )
+        if mode == "advanced-chat" and "end" in node_types and "answer" not in node_types:
+            errors.append(
+                "App mode is 'advanced-chat' but only 'end' node found — "
+                "chatflows must use 'answer' nodes, not 'end'."
             )
 
+    # ------------------------------------------------------------------
+    # 12. Variable references use known node IDs or system prefixes
+    # ------------------------------------------------------------------
+    bad_refs = []
+    for prefix, full_ref in find_variable_references(data):
+        if prefix in _SYSTEM_PREFIXES:
+            continue
+        if prefix not in node_id_set:
+            bad_refs.append((prefix, full_ref))
+    for prefix, full_ref in bad_refs:
+        errors.append(
+            f"Variable reference {full_ref!r} uses unknown node/prefix '{prefix}'."
+        )
+
+    # ------------------------------------------------------------------
+    # 13. conversation_variables entries have required fields
+    # ------------------------------------------------------------------
+    conv_vars = workflow.get("conversation_variables", [])
+    if isinstance(conv_vars, list):
+        valid_cv_types = {
+            "string", "number", "integer", "boolean",
+            "array[string]", "array[object]", "array[number]",
+        }
+        for idx, cv in enumerate(conv_vars):
+            if not isinstance(cv, dict):
+                errors.append(f"conversation_variables[{idx}] is not a mapping.")
+                continue
+            for field in ("id", "name", "value_type"):
+                if field not in cv:
+                    errors.append(
+                        f"conversation_variables[{idx}] missing required field '{field}'."
+                    )
+            vt = cv.get("value_type")
+            if vt and vt not in valid_cv_types:
+                errors.append(
+                    f"conversation_variables[{idx}] 'value_type' is '{vt}' — "
+                    f"must be one of: {sorted(valid_cv_types)}."
+                )
+
+    # ------------------------------------------------------------------
+    # 14. Code nodes must use 'variables' not 'inputs'
+    # ------------------------------------------------------------------
+    for node in nodes:
+        if not isinstance(node, dict):
+            continue
+        ndata = node.get("data", {})
+        if not isinstance(ndata, dict):
+            continue
+        ntype = ndata.get("type")
+        nid = node.get("id", "?")
+
+        if ntype == "code":
+            if "inputs" in ndata and "variables" not in ndata:
+                errors.append(
+                    f"Code node '{nid}' uses old 'inputs' dict format — "
+                    "must use 'variables' list with value_selector entries."
+                )
+            # Check outputs have children: null
+            outputs = ndata.get("outputs")
+            if isinstance(outputs, dict):
+                for out_name, out_val in outputs.items():
+                    if isinstance(out_val, dict) and "children" not in out_val:
+                        errors.append(
+                            f"Code node '{nid}' output '{out_name}' is missing "
+                            "'children: null' field."
+                        )
+
+        # 14b. End node outputs must use value_type not label
+        if ntype == "end":
+            out_list = ndata.get("outputs", [])
+            if isinstance(out_list, list):
+                for oi, out_entry in enumerate(out_list):
+                    if isinstance(out_entry, dict):
+                        if "label" in out_entry and "value_type" not in out_entry:
+                            errors.append(
+                                f"End node '{nid}' output[{oi}] uses 'label' — "
+                                "must use 'value_type' (e.g. value_type: string)."
+                            )
+
+        # 14c. LLM prompt_template entries should have 'id' field
+        if ntype == "llm":
+            prompt_template = ndata.get("prompt_template", [])
+            if isinstance(prompt_template, list):
+                for pi, entry in enumerate(prompt_template):
+                    if isinstance(entry, dict) and "id" not in entry:
+                        errors.append(
+                            f"LLM node '{nid}' prompt_template[{pi}] is missing "
+                            "'id' field (UUID required by Dify)."
+                        )
+
     if verbose and not errors:
-        print("All checks passed — no issues found.")
+        print("All checks passed.")
 
     return errors
 
@@ -207,14 +389,10 @@ def main():
         description="Validate a Dify DSL workflow YAML file."
     )
     parser.add_argument("yaml_file", help="Path to the workflow YAML file.")
-    parser.add_argument(
-        "--verbose", "-v",
-        action="store_true",
-        help="Print detailed progress information.",
-    )
+    parser.add_argument("--verbose", "-v", action="store_true",
+                        help="Print detailed progress.")
     args = parser.parse_args()
 
-    # Load file
     try:
         with open(args.yaml_file, "r", encoding="utf-8") as fh:
             data = yaml.safe_load(fh)
@@ -235,20 +413,16 @@ def main():
     errors = validate(data, verbose=args.verbose)
 
     if errors:
-        print(f"\nFAIL - {len(errors)} error(s) found:\n")
+        print(f"\nFAIL - {len(errors)} error(s):\n")
         for err in errors:
             print(f"  [ERROR] {err}")
         sys.exit(1)
 
-    # Build summary from validated data
     graph = data.get("workflow", {}).get("graph", {})
     nodes = graph.get("nodes", [])
     edges = graph.get("edges", [])
-    app_mode = data.get("app", {}).get("mode", "unknown") if isinstance(data.get("app"), dict) else "unknown"
-
-    print(
-        f"\nPASS - {len(nodes)} node(s), {len(edges)} edge(s), app mode: {app_mode}"
-    )
+    mode = data.get("app", {}).get("mode", "unknown") if isinstance(data.get("app"), dict) else "unknown"
+    print(f"\nPASS - {len(nodes)} node(s), {len(edges)} edge(s), mode: {mode}")
     sys.exit(0)
 
 

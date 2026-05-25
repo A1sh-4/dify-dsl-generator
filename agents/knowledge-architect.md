@@ -17,9 +17,9 @@ Spawned by the main `/dify` skill pipeline when **requirements-analyzer** identi
 
 Read the following documentation files before advising the user:
 
-- `docs/features/knowledge-base.md` — Dify's knowledge base capabilities, supported file types, indexing modes
-- `docs/patterns/rag-pattern.md` — standard RAG node graph patterns, context injection approaches, prompt templates
-- `docs/setup/knowledge-base-setup.md` — step-by-step setup instructions, dataset ID location, embedding model configuration
+- `skills/dify/references/features/knowledge-base.md` — Dify's knowledge base capabilities, supported file types, indexing modes
+- `skills/dify/references/patterns/rag-pattern.md` — standard RAG node graph patterns, context injection approaches, prompt templates
+- `skills/dify/references/setup/knowledge-base-setup.md` — step-by-step setup instructions, dataset ID location, embedding model configuration
 
 ---
 

@@ -1,0 +1,257 @@
+app:
+  description: A vision-powered chatflow that accepts an uploaded image and extracts
+    all visible text using OCR via Claude's vision capability.
+  icon: "\U0001F4C4"
+  icon_background: '#EFF6FF'
+  mode: advanced-chat
+  name: OCR Chatflow
+  use_icon_as_answer_icon: false
+dependencies: []
+kind: app
+version: 0.5.0
+workflow:
+  conversation_variables: []
+  environment_variables: []
+  features:
+    file_upload:
+      allowed_file_extensions:
+        - .JPG
+        - .JPEG
+        - .PNG
+        - .GIF
+        - .WEBP
+        - .SVG
+      allowed_file_types:
+        - image
+      allowed_file_upload_methods:
+        - local_file
+        - remote_url
+      enabled: true
+      fileUploadConfig:
+        attachment_image_file_size_limit: 2
+        audio_file_size_limit: 50
+        batch_count_limit: 5
+        file_size_limit: 15
+        file_upload_limit: 20
+        image_file_batch_limit: 10
+        image_file_size_limit: 5
+        single_chunk_attachment_limit: 10
+        video_file_size_limit: 100
+        workflow_file_upload_limit: 10
+      image:
+        enabled: true
+        number_limits: 3
+        transfer_methods:
+          - local_file
+          - remote_url
+      number_limits: 3
+    opening_statement: |
+      <div style="font-family:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif; max-width:680px; padding:20px; border-radius:12px; box-shadow:0 6px 20px rgba(0,0,0,0.06); background:linear-gradient(180deg,#ffffff,#f8fafc); border:1px solid #e2e8f0;">
+        <div style="display:flex; align-items:center; gap:12px; margin-bottom:12px; padding-bottom:12px; border-bottom:1px solid #eef2f6;">
+          <div style="background:#0369a1; color:white; font-weight:700; padding:4px 10px; border-radius:6px; font-size:12px; letter-spacing:0.5px;">OCR</div>
+          <div style="color:#0f172a; font-size:14px; font-weight:600;">📄 Extract text from any image instantly</div>
+        </div>
+        <div style="font-size:13px; color:#334155; line-height:1.6;">
+          <p style="margin:0 0 10px 0;">Upload an image and this chatflow will extract all visible text, preserving the original layout and structure using Claude's vision capability.</p>
+          <div style="display:flex; flex-wrap:wrap; gap:6px; margin-bottom:14px;">
+            <span style="background:#e0f2fe; color:#0284c7; border:1px solid #bae6fd; padding:4px 10px; border-radius:20px; font-size:11px; font-weight:600;">📷 Photos & scans</span>
+            <span style="background:#e0f2fe; color:#0284c7; border:1px solid #bae6fd; padding:4px 10px; border-radius:20px; font-size:11px; font-weight:600;">📊 Tables & charts</span>
+            <span style="background:#e0f2fe; color:#0284c7; border:1px solid #bae6fd; padding:4px 10px; border-radius:20px; font-size:11px; font-weight:600;">🧾 Receipts & invoices</span>
+            <span style="background:#e0f2fe; color:#0284c7; border:1px solid #bae6fd; padding:4px 10px; border-radius:20px; font-size:11px; font-weight:600;">📝 Handwritten notes</span>
+          </div>
+          <p style="margin:0;">To get started, upload an image using the paperclip icon below.</p>
+        </div>
+      </div>
+    retriever_resource:
+      enabled: false
+    sensitive_word_avoidance:
+      enabled: false
+    speech_to_text:
+      enabled: false
+    suggested_questions:
+      - Upload a receipt and extract the line items
+      - Extract the text from a business card photo
+      - Read the text from a handwritten note
+    suggested_questions_after_answer:
+      enabled: false
+    text_to_speech:
+      enabled: false
+      language: ''
+      voice: ''
+  graph:
+    edges:
+      - data:
+          isInLoop: false
+          sourceType: start
+          targetType: llm
+        id: 1718006000001-source-1718006000002-target
+        source: '1718006000001'
+        sourceHandle: source
+        target: '1718006000002'
+        targetHandle: target
+        type: custom
+        zIndex: 0
+      - data:
+          isInLoop: false
+          sourceType: llm
+          targetType: template-transform
+        id: 1718006000002-source-1718006000003-target
+        source: '1718006000002'
+        sourceHandle: source
+        target: '1718006000003'
+        targetHandle: target
+        type: custom
+        zIndex: 0
+      - data:
+          isInLoop: false
+          sourceType: template-transform
+          targetType: answer
+        id: 1718006000003-source-1718006000004-target
+        source: '1718006000003'
+        sourceHandle: source
+        target: '1718006000004'
+        targetHandle: target
+        type: custom
+        zIndex: 0
+    nodes:
+      - data:
+          desc: Entry point — the user uploads an image to analyze
+          selected: false
+          title: Start
+          type: start
+          variables:
+            - label: Image to analyze
+              max_length: 256
+              options: []
+              required: false
+              type: file
+              variable: uploaded_file
+        height: 90
+        id: '1718006000001'
+        position:
+          x: 80
+          y: 282
+        positionAbsolute:
+          x: 80
+          y: 282
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          context:
+            enabled: false
+            variable_selector: []
+          desc: Uses Claude vision to perform OCR on the uploaded image
+          memory:
+            query_prompt_template: '{{#sys.query#}}'
+            role_prefix:
+              assistant: ''
+              user: ''
+            window:
+              enabled: false
+              size: 50
+          model:
+            completion_params:
+              temperature: 0.1
+            mode: chat
+            name: claude-sonnet-4-6
+            provider: anthropic
+          prompt_template:
+            - edition_type: basic
+              id: 1c1b4efe-d39f-47b5-b6ba-f6c338bf10ec
+              role: system
+              text: You are an expert OCR assistant. Your sole task is to extract ALL
+                text visible in the provided image, preserving the original layout and
+                structure as closely as possible. Output only the extracted text — no
+                explanations, no commentary.
+            - edition_type: basic
+              id: 7e6f8736-30ca-48ba-9815-e8e44f3db7a9
+              role: user
+              text: Please extract all text from this image.
+          retry_config:
+            max_retries: 3
+            retry_enabled: true
+            retry_interval: 1000
+          selected: false
+          structured_output: {}
+          structured_output_enabled: false
+          title: OCR Extraction
+          type: llm
+          variables: []
+          vision:
+            configs:
+              detail: high
+              variable_selector:
+                - '1718006000001'
+                - uploaded_file
+            enabled: true
+        height: 98
+        id: '1718006000002'
+        position:
+          x: 380
+          y: 282
+        positionAbsolute:
+          x: 380
+          y: 282
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          desc: Renders the extracted text in a styled card with monospace formatting
+          selected: false
+          template: |
+            <div style="font-family:system-ui,sans-serif; padding:16px; border-radius:8px; background:#f8fafc; border:1px solid #e2e8f0;">
+            <div style="display:flex; align-items:center; gap:8px; margin-bottom:12px; padding-bottom:10px; border-bottom:1px solid #e2e8f0;">
+            <span style="font-size:16px;">📄</span><strong style="color:#0f172a; font-size:14px;">Extracted Text</strong>
+            </div>
+            <div style="font-size:13px; color:#334155; line-height:1.7; white-space:pre-wrap; font-family:'Courier New',monospace;">{{ extracted_text }}</div>
+            </div>
+          title: Format Extracted Text
+          type: template-transform
+          variables:
+            - value_selector:
+                - '1718006000002'
+                - text
+              variable: extracted_text
+        height: 54
+        id: '1718006000003'
+        position:
+          x: 680
+          y: 282
+        positionAbsolute:
+          x: 680
+          y: 282
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          answer: '{{#1718006000003.output#}}'
+          desc: Streams the formatted extracted text to the user
+          selected: false
+          title: Answer
+          type: answer
+          variables: []
+        height: 107
+        id: '1718006000004'
+        position:
+          x: 980
+          y: 282
+        positionAbsolute:
+          x: 980
+          y: 282
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+    viewport:
+      x: 0
+      y: 0
+      zoom: 1
+  rag_pipeline_variables: []

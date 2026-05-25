@@ -1,0 +1,295 @@
+app:
+  description: A RAG-powered chatflow that retrieves relevant documents from a knowledge
+    base using semantic search and generates grounded, cited answers — refusing to
+    speculate beyond what the indexed documents contain.
+  icon: "\U0001F4DA"
+  icon_background: '#ECFDF5'
+  mode: advanced-chat
+  name: RAG Chatflow
+  use_icon_as_answer_icon: false
+dependencies: []
+kind: app
+version: 0.5.0
+workflow:
+  conversation_variables: []
+  environment_variables: []
+  features:
+    file_upload:
+      allowed_file_extensions:
+        - .JPG
+        - .JPEG
+        - .PNG
+        - .GIF
+        - .WEBP
+        - .SVG
+      allowed_file_types:
+        - image
+      allowed_file_upload_methods:
+        - local_file
+        - remote_url
+      enabled: false
+      fileUploadConfig:
+        attachment_image_file_size_limit: 2
+        audio_file_size_limit: 50
+        batch_count_limit: 5
+        file_size_limit: 15
+        file_upload_limit: 20
+        image_file_batch_limit: 10
+        image_file_size_limit: 5
+        single_chunk_attachment_limit: 10
+        video_file_size_limit: 100
+        workflow_file_upload_limit: 10
+      image:
+        enabled: false
+        number_limits: 3
+        transfer_methods:
+          - local_file
+          - remote_url
+      number_limits: 3
+    opening_statement: |
+      <div style="font-family:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif; max-width:680px; padding:20px; border-radius:12px; box-shadow:0 6px 20px rgba(0,0,0,0.06); background:linear-gradient(180deg,#ffffff,#f8fafc); border:1px solid #e2e8f0;">
+        <div style="display:flex; align-items:center; gap:12px; margin-bottom:12px; padding-bottom:12px; border-bottom:1px solid #eef2f6;">
+          <div style="background:#059669; color:white; font-weight:700; padding:4px 10px; border-radius:6px; font-size:12px; letter-spacing:0.5px;">KB</div>
+          <div style="color:#0f172a; font-size:14px; font-weight:600;">📚 Ask anything from the knowledge base</div>
+        </div>
+        <div style="font-size:13px; color:#334155; line-height:1.6;">
+          <p style="margin:0 0 10px 0;">This chatflow searches your knowledge base using semantic retrieval and generates grounded answers with source citations — only using information that exists in the indexed documents.</p>
+          <div style="display:flex; flex-wrap:wrap; gap:6px; margin-bottom:14px;">
+            <span style="background:#d1fae5; color:#059669; border:1px solid #6ee7b7; padding:4px 10px; border-radius:20px; font-size:11px; font-weight:600;">🔍 Semantic search</span>
+            <span style="background:#d1fae5; color:#059669; border:1px solid #6ee7b7; padding:4px 10px; border-radius:20px; font-size:11px; font-weight:600;">📌 Source citations</span>
+            <span style="background:#d1fae5; color:#059669; border:1px solid #6ee7b7; padding:4px 10px; border-radius:20px; font-size:11px; font-weight:600;">✅ Grounded answers only</span>
+          </div>
+          <p style="margin:0;">Type your question below to search the knowledge base.</p>
+        </div>
+      </div>
+    retriever_resource:
+      enabled: true
+    sensitive_word_avoidance:
+      enabled: false
+    speech_to_text:
+      enabled: false
+    suggested_questions:
+      - What topics are covered in this knowledge base?
+      - Summarize the key points from the documentation
+      - What are the main guidelines or rules described?
+    suggested_questions_after_answer:
+      enabled: false
+    text_to_speech:
+      enabled: false
+      language: ''
+      voice: ''
+  graph:
+    edges:
+      - data:
+          isInLoop: false
+          sourceType: start
+          targetType: knowledge-retrieval
+        id: 1718008000001-source-1718008000002-target
+        source: '1718008000001'
+        sourceHandle: source
+        target: '1718008000002'
+        targetHandle: target
+        type: custom
+        zIndex: 0
+      - data:
+          isInLoop: false
+          sourceType: knowledge-retrieval
+          targetType: llm
+        id: 1718008000002-source-1718008000003-target
+        source: '1718008000002'
+        sourceHandle: source
+        target: '1718008000003'
+        targetHandle: target
+        type: custom
+        zIndex: 0
+      - data:
+          isInLoop: false
+          sourceType: llm
+          targetType: template-transform
+        id: 1718008000003-source-1718008000004-target
+        source: '1718008000003'
+        sourceHandle: source
+        target: '1718008000004'
+        targetHandle: target
+        type: custom
+        zIndex: 0
+      - data:
+          isInLoop: false
+          sourceType: template-transform
+          targetType: answer
+        id: 1718008000004-source-1718008000005-target
+        source: '1718008000004'
+        sourceHandle: source
+        target: '1718008000005'
+        targetHandle: target
+        type: custom
+        zIndex: 0
+    nodes:
+      - data:
+          desc: Entry point — the user's question arrives via the chat input
+          selected: false
+          title: Start
+          type: start
+          variables: []
+        height: 54
+        id: '1718008000001'
+        position:
+          x: 80
+          y: 282
+        positionAbsolute:
+          x: 80
+          y: 282
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          dataset_ids:
+            - YOUR_DATASET_ID_HERE
+          desc: Retrieves the top-5 most relevant chunks from the knowledge base using
+            semantic search
+          multiple_retrieval_config:
+            reranking_enable: false
+            score_threshold: 0.5
+            top_k: 5
+          query_variable_selector:
+            - sys
+            - query
+          retrieval_mode: semantic_search
+          selected: false
+          single_retrieval_config:
+            model:
+              completion_params:
+                max_tokens: 512
+                temperature: 0.1
+              mode: chat
+              name: claude-haiku-4-5-20251001
+              provider: anthropic
+          title: Knowledge Retrieval
+          type: knowledge-retrieval
+        height: 98
+        id: '1718008000002'
+        position:
+          x: 380
+          y: 282
+        positionAbsolute:
+          x: 380
+          y: 282
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          context:
+            enabled: true
+            variable_selector:
+              - '1718008000002'
+              - result
+          desc: Synthesizes retrieved context into a concise, grounded answer with citations
+          memory:
+            query_prompt_template: '{{#sys.query#}}'
+            role_prefix:
+              assistant: ''
+              user: ''
+            window:
+              enabled: false
+              size: 50
+          model:
+            completion_params:
+              max_tokens: 2048
+              temperature: 0.3
+            mode: chat
+            name: claude-sonnet-4-6
+            provider: anthropic
+          prompt_template:
+            - edition_type: basic
+              id: dd9f22ba-de41-407e-8bf5-780c8e50d980
+              role: system
+              text: "You are a helpful assistant that answers questions strictly based\
+                \ on the provided knowledge base context.\n\nRules:\n- Answer ONLY\
+                \ based on the context documents provided. Do not use outside knowledge.\n\
+                - Always cite the source document name or section when referencing\
+                \ information.\n- If the context does not contain enough information\
+                \ to answer, respond with: \"I don't have sufficient information in\
+                \ the knowledge base to answer that question.\"\n- Be concise and\
+                \ accurate. Do not add information not found in the context."
+            - edition_type: basic
+              id: 7783b027-dd5a-48f5-9a9c-bcbc55eefb1d
+              role: user
+              text: '{{#sys.query#}}'
+          retry_config:
+            max_retries: 3
+            retry_enabled: true
+            retry_interval: 1000
+          selected: false
+          structured_output: {}
+          structured_output_enabled: false
+          title: RAG Answer
+          type: llm
+          variables: []
+          vision:
+            enabled: false
+        height: 98
+        id: '1718008000003'
+        position:
+          x: 680
+          y: 282
+        positionAbsolute:
+          x: 680
+          y: 282
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          desc: Passes the LLM's grounded markdown answer through to the answer node
+          selected: false
+          template: '{{ answer_text }}'
+          title: Format Answer
+          type: template-transform
+          variables:
+            - value_selector:
+                - '1718008000003'
+                - text
+              variable: answer_text
+        height: 54
+        id: '1718008000004'
+        position:
+          x: 980
+          y: 282
+        positionAbsolute:
+          x: 980
+          y: 282
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          answer: '{{#1718008000004.output#}}'
+          desc: Streams the grounded answer to the user with source citations
+          selected: false
+          title: Answer
+          type: answer
+          variables: []
+        height: 107
+        id: '1718008000005'
+        position:
+          x: 1280
+          y: 282
+        positionAbsolute:
+          x: 1280
+          y: 282
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+    viewport:
+      x: 0
+      y: 0
+      zoom: 1
+  rag_pipeline_variables: []

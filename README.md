@@ -127,9 +127,22 @@ Steps 3, 4, 5, and 8 are conditional — they only run when the relevant compone
 ```
 dify-dsl-generator/
 ├── .claude-plugin/
-│   └── plugin.json          # Plugin manifest
+│   └── plugin.json              # Plugin manifest (name, version, author, license)
 ├── skills/
-│   └── dify.md              # /dify slash command definition
+│   └── dify/
+│       ├── SKILL.md             # /dify skill entry point (with YAML frontmatter)
+│       ├── references/          # Reference documentation for agents
+│       │   ├── nodes/           # Per-node-type reference docs (20 files)
+│       │   ├── config/          # LLM and app configuration
+│       │   ├── schema/          # DSL schema reference
+│       │   ├── patterns/        # Reusable design patterns
+│       │   ├── features/        # Plugins, tools, knowledge bases
+│       │   ├── api/             # Dify API reference
+│       │   └── setup/           # Setup and installation guides
+│       └── assets/              # Ground-truth YAML examples
+│           ├── chatflows/       # Example chatflow YAML files
+│           ├── workflows/       # Example workflow YAML files
+│           └── templates/       # Minimal starter templates
 ├── agents/
 │   ├── requirements-analyzer.md
 │   ├── plugin-finder.md
@@ -142,22 +155,15 @@ dify-dsl-generator/
 │   ├── dsl-generator.md
 │   └── dsl-validator.md
 ├── hooks/
-│   └── post-write-validate.md   # Auto-validation hook
+│   └── post-write-validate.sh   # Auto-validation hook
 ├── scripts/
 │   ├── generate_id.py           # Node ID generation
 │   ├── validate_workflow.py     # Schema validation
 │   └── format_yaml.py           # YAML normalization
-├── docs/
-│   ├── nodes/                   # Per-node-type reference docs
-│   ├── config/                  # LLM and app configuration
-│   ├── schema/                  # DSL schema reference
-│   ├── patterns/                # Reusable design patterns
-│   └── features/                # Plugins, tools, knowledge bases
-├── assets/
-│   ├── chatflows/               # Example chatflow YAML files
-│   └── workflows/               # Example workflow YAML files
+├── tests/                       # Pytest suite (91 tests)
 ├── settings.json                # Plugin permissions
 ├── CLAUDE.md                    # Agent instructions and rules
+├── LICENSE                      # MIT
 ├── README.md                    # This file
 └── CHANGELOG.md                 # Version history
 ```
@@ -175,7 +181,7 @@ dify-dsl-generator/
 
 ## Contributing
 
-Contributions are welcome. Please open an issue before submitting a pull request for significant changes. See `docs/` for the reference materials agents use during generation — improving these docs directly improves generation quality.
+Contributions are welcome. Please open an issue before submitting a pull request for significant changes. See `skills/dify/references/` for the reference materials agents use during generation — improving these docs directly improves generation quality.
 
 ---
 

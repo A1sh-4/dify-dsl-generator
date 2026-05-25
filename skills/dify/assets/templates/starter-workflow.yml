@@ -13,23 +13,45 @@ app:
   mode: workflow                     # REQUIRED — do not change for workflows
   name: "# REPLACE: Your Workflow Name"
   use_icon_as_answer_icon: false
+dependencies: []                     # TODO: Add marketplace plugin entries here if tool nodes use plugins
 kind: app
-version: 0.1.3
-dependencies: []                     # TODO: Add marketplace plugin IDs here if any tool nodes use plugins
+version: 0.5.0
 workflow:
   conversation_variables: []         # REQUIRED even if empty — do not remove this key
   environment_variables: []          # TODO: Add env var entries here for any API keys or secrets
   features:
-    # ----- File upload -----
     file_upload:
+      allowed_file_extensions:
+        - .JPG
+        - .JPEG
+        - .PNG
+        - .GIF
+        - .WEBP
+        - .SVG
+      allowed_file_types:
+        - image
+      allowed_file_upload_methods:
+        - local_file
+        - remote_url
       enabled: false                 # TODO: Set true if your workflow accepts file uploads
+      fileUploadConfig:
+        attachment_image_file_size_limit: 2
+        audio_file_size_limit: 50
+        batch_count_limit: 5
+        file_size_limit: 15
+        file_upload_limit: 20
+        image_file_batch_limit: 10
+        image_file_size_limit: 5
+        single_chunk_attachment_limit: 10
+        video_file_size_limit: 100
+        workflow_file_upload_limit: 10
       image:
         enabled: false
         number_limits: 3
         transfer_methods:
           - local_file
           - remote_url
-    # ----- Chat-specific features (not used in workflow mode, include with defaults) -----
+      number_limits: 3
     opening_statement: ""
     retriever_resource:
       enabled: false                 # TODO: Set true if this workflow uses a knowledge-retrieval node
@@ -48,11 +70,10 @@ workflow:
     edges:
       # Edge 1: Start → LLM
       - data:
-          isInIteration: false
+          isInLoop: false
           sourceType: start          # TODO: Match the type string of the source node
           targetType: llm            # TODO: Match the type string of the target node
         id: "1718009000001-source-1718009000002-target"
-        selected: false
         source: "1718009000001"
         sourceHandle: source
         target: "1718009000002"
@@ -61,11 +82,10 @@ workflow:
         zIndex: 0
       # Edge 2: LLM → End
       - data:
-          isInIteration: false
+          isInLoop: false
           sourceType: llm
           targetType: end
         id: "1718009000002-source-1718009000003-target"
-        selected: false
         source: "1718009000002"
         sourceHandle: source
         target: "1718009000003"
@@ -75,24 +95,27 @@ workflow:
     nodes:
       # -----------------------------------------------------------------
       # NODE 1: Start
-      # The start node defines what inputs your workflow accepts.
+      # Defines what inputs the workflow accepts.
       # -----------------------------------------------------------------
       - data:
-          desc: ""                   # TODO: Add a short description of this node
+          desc: ""
           selected: false
           title: "Start"             # TODO: Rename if desired
           type: start
           variables:
             # TODO: Define your input variables here.
             # type options: text-input | paragraph | select | number | file | file-list
-            - label: "User Query"
+            - default: ""
+              hint: ""
+              label: "User Query"
               max_length: 2048
               options: []            # TODO: Fill if type is "select"
+              placeholder: ""
               required: true
               type: text-input
               variable: user_query   # TODO: Rename to match your domain
         height: 90
-        id: "1718009000001"          # TODO: Must be unique within this file
+        id: "1718009000001"          # TODO: Must be unique — use 13-digit Unix ms timestamp
         position:
           x: 80
           y: 282
@@ -107,29 +130,46 @@ workflow:
 
       # -----------------------------------------------------------------
       # NODE 2: LLM
-      # The LLM node calls an AI model with a prompt.
+      # Calls an AI model with a prompt.
       # -----------------------------------------------------------------
       - data:
           context:
             enabled: false           # TODO: Set true and configure variable_selector if using RAG
             variable_selector: []
           desc: ""
+          memory:
+            query_prompt_template: "{{#sys.query#}}"
+            role_prefix:
+              assistant: ""
+              user: ""
+            window:
+              enabled: false
+              size: 50
           model:
             completion_params:
-              max_tokens: 2048       # TODO: Adjust for your use case
               temperature: 0.7       # TODO: Lower for factual tasks, higher for creative
             mode: chat
             name: claude-sonnet-4-6  # TODO: Replace with desired model
             provider: anthropic      # TODO: Replace with your provider
           prompt_template:
-            - role: system
-              text: "You are a helpful assistant."  # TODO: Write your system prompt
-            - role: user
-              # TODO: Update variable reference to match your start node variable and its ID
-              text: "{{#1718009000001.user_query#}}"
+            - edition_type: basic
+              id: "00000000-0000-0000-0000-000000000001"  # TODO: Replace with a real UUIDv4
+              role: system
+              text: "You are a helpful assistant."        # TODO: Write your system prompt
+            - edition_type: basic
+              id: "00000000-0000-0000-0000-000000000002"  # TODO: Replace with a real UUIDv4
+              role: user
+              text: "{{#1718009000001.user_query#}}"      # TODO: Update variable reference
+          retry_config:
+            max_retries: 3
+            retry_enabled: true
+            retry_interval: 1000
           selected: false
+          structured_output: {}
+          structured_output_enabled: false
           title: "LLM"               # TODO: Give this node a descriptive name
           type: llm
+          variables: []
           vision:
             enabled: false           # TODO: Set true if accepting image inputs
         height: 98
@@ -148,17 +188,16 @@ workflow:
 
       # -----------------------------------------------------------------
       # NODE 3: End
-      # The end node defines what the workflow returns as its result.
+      # Defines what the workflow returns as its result.
       # REQUIRED for workflows — do not replace with "answer" node.
       # -----------------------------------------------------------------
       - data:
           desc: ""
           outputs:
-            # TODO: Adjust value_selector to point to the correct node ID and output field
-            - label: "Result"        # TODO: Human-readable label for Dify editor
-              value_selector:
+            - value_selector:
                 - "1718009000002"    # TODO: Must match the ID of the node producing the output
                 - text               # TODO: "text" for LLM output; adjust for other node types
+              value_type: string     # TODO: string | number | object | array[string] | array[object]
               variable: result       # TODO: Key name in the API response JSON
           selected: false
           title: "End"
@@ -176,3 +215,8 @@ workflow:
         targetPosition: left
         type: custom
         width: 244
+    viewport:
+      x: 0
+      y: 0
+      zoom: 1
+  rag_pipeline_variables: []

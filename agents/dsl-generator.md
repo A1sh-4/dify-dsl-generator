@@ -21,26 +21,26 @@ Your output is a single `.yml` file written to the current directory, plus a mar
 Read ALL of the following before writing a single line of YAML:
 
 **Schema (read based on app type):**
-- If chatflow: `docs/schema/chatflow-schema.md`
-- If workflow: `docs/schema/workflow-schema.md`
-- `docs/schema/edge-types.md` — edge ID format and handle values
-- `docs/schema/variable-syntax.md` — correct variable reference syntax
+- If chatflow: `skills/dify/references/schema/chatflow-schema.md`
+- If workflow: `skills/dify/references/schema/workflow-schema.md`
+- `skills/dify/references/schema/edge-types.md` — edge ID format and handle values
+- `skills/dify/references/schema/variable-syntax.md` — correct variable reference syntax
 
 **Node docs — read for each node type appearing in the approved plan:**
-- `docs/nodes/start.md`
-- `docs/nodes/llm.md` (if any LLM nodes)
-- `docs/nodes/answer.md` (if chatflow)
-- `docs/nodes/end.md` (if workflow)
-- `docs/nodes/if-else.md` (if any conditional nodes)
-- `docs/nodes/knowledge-retrieval.md` (if RAG is used)
-- `docs/nodes/http.md` (if any HTTP nodes)
-- `docs/nodes/code.md` (if any code nodes)
-- `docs/nodes/tool.md` (if any tool/plugin nodes)
+- `skills/dify/references/nodes/start.md`
+- `skills/dify/references/nodes/llm.md` (if any LLM nodes)
+- `skills/dify/references/nodes/answer.md` (if chatflow)
+- `skills/dify/references/nodes/end.md` (if workflow)
+- `skills/dify/references/nodes/if-else.md` (if any conditional nodes)
+- `skills/dify/references/nodes/knowledge-retrieval.md` (if RAG is used)
+- `skills/dify/references/nodes/http.md` (if any HTTP nodes)
+- `skills/dify/references/nodes/code.md` (if any code nodes)
+- `skills/dify/references/nodes/tool.md` (if any tool/plugin nodes)
 - Any other node types present in the plan
 
 **Templates (use as structural reference, not as copy-paste):**
-- If chatflow: `assets/templates/starter-chatflow.yml`
-- If workflow: `assets/templates/starter-workflow.yml`
+- If chatflow: `skills/dify/assets/templates/starter-chatflow.yml`
+- If workflow: `skills/dify/assets/templates/starter-workflow.yml`
 
 Read the schema docs and templates to understand the exact field names, required fields, ordering conventions, and top-level structure. The templates reflect real importable DSL — treat them as ground truth.
 
@@ -211,7 +211,7 @@ For every node in the approved plan, build a complete YAML node entry. Use this 
     selected: false
     title: "[Node Title from plan]"
     type: [node_type]
-    # ... node-specific fields from docs/nodes/[type].md ...
+    # ... node-specific fields from skills/dify/references/nodes/[type].md ...
   height: 54
   id: "[13-digit node ID from plan]"
   position:
@@ -238,7 +238,7 @@ Important height values by node type (approximate — use these defaults):
 - `code`: height 54
 - `tool`: height 54
 
-**For each node type, fill in the `data` block according to the corresponding doc in `docs/nodes/`.** The node docs specify every required field and its structure. Do not invent field names or omit required fields.
+**For each node type, fill in the `data` block according to the corresponding doc in `skills/dify/references/nodes/`.** The node docs specify every required field and its structure. Do not invent field names or omit required fields.
 
 **LLM node data fields — use this exact structure:**
 ```yaml

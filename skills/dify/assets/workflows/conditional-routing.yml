@@ -1,0 +1,305 @@
+app:
+  description: Routes user input to a coding assistant or general assistant based
+    on the input type selected.
+  icon: 🤖
+  icon_background: '#FFEAD5'
+  mode: workflow
+  name: Conditional Routing Workflow
+  use_icon_as_answer_icon: false
+kind: app
+version: 0.5.0
+dependencies: []
+workflow:
+  conversation_variables: []
+  environment_variables: []
+  features:
+    file_upload:
+      enabled: false
+      image:
+        enabled: false
+        number_limits: 3
+        transfer_methods:
+        - local_file
+        - remote_url
+    opening_statement: ''
+    retriever_resource:
+      enabled: false
+    sensitive_word_avoidance:
+      enabled: false
+    speech_to_text:
+      enabled: false
+    suggested_questions: []
+    suggested_questions_after_answer:
+      enabled: false
+    text_to_speech:
+      enabled: false
+      language: ''
+      voice: ''
+  graph:
+    edges:
+    - data:
+        isInIteration: false
+        sourceType: start
+        targetType: if-else
+      id: 1718002000001-source-1718002000002-target
+      selected: false
+      source: '1718002000001'
+      sourceHandle: source
+      target: '1718002000002'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        sourceType: if-else
+        targetType: llm
+      id: 1718002000002-true-1718002000003-target
+      selected: false
+      source: '1718002000002'
+      sourceHandle: 'true'
+      target: '1718002000003'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        sourceType: if-else
+        targetType: llm
+      id: 1718002000002-false-1718002000004-target
+      selected: false
+      source: '1718002000002'
+      sourceHandle: 'false'
+      target: '1718002000004'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        sourceType: llm
+        targetType: variable-aggregator
+      id: 1718002000003-source-1718002000005-target
+      selected: false
+      source: '1718002000003'
+      sourceHandle: source
+      target: '1718002000005'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        sourceType: llm
+        targetType: variable-aggregator
+      id: 1718002000004-source-1718002000005-target
+      selected: false
+      source: '1718002000004'
+      sourceHandle: source
+      target: '1718002000005'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        sourceType: variable-aggregator
+        targetType: end
+      id: 1718002000005-source-1718002000006-target
+      selected: false
+      source: '1718002000005'
+      sourceHandle: source
+      target: '1718002000006'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    nodes:
+    - data:
+        desc: Collects user input and the routing selection
+        selected: false
+        title: Start
+        type: start
+        variables:
+        - label: Your input
+          max_length: 4096
+          options: []
+          required: true
+          type: text-input
+          variable: user_input
+        - label: Input type
+          max_length: 256
+          options:
+          - code
+          - general
+          required: true
+          type: select
+          variable: input_type
+      height: 116
+      id: '1718002000001'
+      position:
+        x: 80
+        y: 282
+      positionAbsolute:
+        x: 80
+        y: 282
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        cases:
+        - case_id: 'true'
+          conditions:
+          - comparison_operator: ==
+            value: code
+            variable_selector:
+            - '1718002000001'
+            - input_type
+          logical_operator: and
+        - case_id: 'false'
+          conditions: []
+          logical_operator: and
+        desc: Routes to coding assistant if input_type is 'code', otherwise general
+          assistant
+        selected: false
+        title: Route by Input Type
+        type: if-else
+      height: 126
+      id: '1718002000002'
+      position:
+        x: 380
+        y: 282
+      positionAbsolute:
+        x: 380
+        y: 282
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        context:
+          enabled: false
+          variable_selector: []
+        desc: Specialized coding assistant with low temperature for precision
+        model:
+          completion_params:
+            max_tokens: 4096
+            temperature: 0.2
+          mode: chat
+          name: claude-sonnet-4-6
+          provider: anthropic
+        prompt_template:
+        - role: system
+          text: You are an expert coding assistant. Provide clean, well-commented
+            code solutions with explanations. Always consider edge cases and best
+            practices.
+          id: 576163cb-4a5c-41e0-a9b8-8b727a6c1a0d
+        - role: user
+          text: '{{#1718002000001.user_input#}}'
+          id: b5b4ec20-f5e7-4920-88e8-cb3300ca3a41
+        selected: false
+        title: Coding Assistant
+        type: llm
+        vision:
+          enabled: false
+      height: 98
+      id: '1718002000003'
+      position:
+        x: 680
+        y: 132
+      positionAbsolute:
+        x: 680
+        y: 132
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        context:
+          enabled: false
+          variable_selector: []
+        desc: General-purpose assistant with higher temperature for creativity
+        model:
+          completion_params:
+            max_tokens: 2048
+            temperature: 0.7
+          mode: chat
+          name: claude-sonnet-4-6
+          provider: anthropic
+        prompt_template:
+        - role: system
+          text: You are a helpful, knowledgeable, and friendly general assistant.
+            Provide clear, accurate, and well-structured answers.
+          id: 5adfa85f-7a0d-4187-94da-82dc53d262bc
+        - role: user
+          text: '{{#1718002000001.user_input#}}'
+          id: 59c5f57a-15d0-4de9-992c-6af9f9c31bf1
+        selected: false
+        title: General Assistant
+        type: llm
+        vision:
+          enabled: false
+      height: 98
+      id: '1718002000004'
+      position:
+        x: 680
+        y: 432
+      positionAbsolute:
+        x: 680
+        y: 432
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        desc: Merges output from whichever branch was taken
+        output_type: string
+        selected: false
+        title: Merge Outputs
+        type: variable-aggregator
+        variables:
+        - - '1718002000003'
+          - text
+        - - '1718002000004'
+          - text
+      height: 54
+      id: '1718002000005'
+      position:
+        x: 980
+        y: 282
+      positionAbsolute:
+        x: 980
+        y: 282
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        desc: Returns the response from the selected assistant
+        outputs:
+        - value_selector:
+          - '1718002000005'
+          - output
+          variable: result
+        selected: false
+        title: End
+        type: end
+      height: 54
+      id: '1718002000006'
+      position:
+        x: 1280
+        y: 282
+      positionAbsolute:
+        x: 1280
+        y: 282
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    viewport:
+      x: 0
+      y: 0
+      zoom: 1
+  rag_pipeline_variables: []

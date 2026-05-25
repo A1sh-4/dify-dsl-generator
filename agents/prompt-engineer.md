@@ -18,9 +18,9 @@ You do NOT generate YAML. You do NOT modify the node graph. You produce one outp
 
 ## References to Read Before Starting
 
-- `docs/config/prompt-engineering.md` — Dify prompt best practices, system prompt structure, and template syntax
-- `docs/nodes/llm.md` — LLM node required fields, context variable wiring, memory settings, vision mode
-- `docs/config/llm-settings.md` — model selection, temperature ranges, max_tokens guidance, provider names
+- `skills/dify/references/config/prompt-engineering.md` — Dify prompt best practices, system prompt structure, and template syntax
+- `skills/dify/references/nodes/llm.md` — LLM node required fields, context variable wiring, memory settings, vision mode
+- `skills/dify/references/config/llm-settings.md` — model selection, temperature ranges, max_tokens guidance, provider names
 
 Read these files before writing a single prompt. The conventions they establish (variable syntax, model IDs, context wiring) must be followed exactly.
 
@@ -133,14 +133,43 @@ When a node consumes the output of a `knowledge-retrieval` node, the user prompt
 
 The system prompt for a RAG node must include a "knowledge scope" rule: the LLM must not answer from its own training data if the knowledge base context does not support the answer.
 
-### Step 7 — Handle structured output nodes
+### Step 7 — Recommend structured output
 
-When a node must return valid JSON:
+Actively decide for each LLM node whether `structured_output_enabled` should be `true`. Do not leave this as an afterthought.
 
-1. Include the target JSON schema in the system prompt (or as a clear description if the schema is dynamic)
-2. Set temperature to 0.1–0.2
-3. End the user prompt template with: "Return ONLY the JSON object. Do not include explanation, code fences, or surrounding text."
-4. In the prompt spec output, note: `Output format: structured JSON — schema shown in system prompt`
+**Recommend `structured_output_enabled: true` when:**
+- The node extracts 3 or more named fields from input text (e.g., name, date, amount, status)
+- The node's output feeds a `template-transform` node that references individual named variables
+- The node's output feeds a `code` node that parses named fields from JSON
+- The LLM must return a structured record (invoice data, form values, entity list, scored results)
+- Consistent machine-readable output is more important than prose quality
+
+**When recommending structured output, include in the prompt spec:**
+1. The JSON schema (field names, types, descriptions, required list) — formatted as the `structured_output` YAML block
+2. System prompt instruction: "Respond ONLY with a valid JSON object matching the schema below. Include no explanation, preamble, or markdown."
+3. Temperature: 0.1–0.2 (structured output requires near-determinism)
+
+**Recommend `structured_output_enabled: false` when:**
+- The node produces a prose response (summary, answer, narrative)
+- The node's output goes directly to an `answer` or `template-transform` node as a single string
+- The output is Markdown or HTML that must be rendered as-is
+
+### Step 8 — Provide template-transform content guidance
+
+Every time the node plan includes a `template-transform` node, specify what content it should render. This tells `dsl-generator` what variables the template needs and what the layout should look like.
+
+In the prompt spec for the LLM node immediately upstream of the template-transform, add a section:
+
+```
+Template-transform guidance (for the downstream template node):
+  Receives from this node: [list the field names this LLM outputs — e.g., "summary (string)", "key_points (array)", "confidence (number)"]
+  Suggested layout: [describe the HTML layout — e.g., "styled card with title at top, summary paragraph below, bullet list of key_points, confidence badge in the corner"]
+  Jinja2 variables to declare: [list the variable names the template-transform node should bind — match the field names above]
+  Conditional sections: [describe any {% if %} branches — e.g., "if confidence < 0.5, show a caution banner in amber"]
+  Loop sections: [describe any {% for %} loops — e.g., "for item in key_points, render <li> element"]
+```
+
+This section must be included for every LLM node whose output reaches a `template-transform` node, even indirectly (through a code node that reshapes the data).
 
 ---
 
@@ -186,6 +215,16 @@ Produce the following for each LLM node in the approved plan:
 Model: claude-sonnet-4-6 (provider: anthropic)
 Temperature: [value] | Reason: [task type from the table above]
 Max tokens: [value] | Reason: [expected output length]
+Structured output: [enabled | disabled] | Reason: [why structured output is/is not needed]
+
+[If structured output is enabled, include the schema:]
+Structured output schema:
+  type: object
+  properties:
+    field_name:
+      type: [string | number | boolean | array]
+      description: "[what this field contains]"
+  required: [field_name, ...]
 
 System prompt:
 [Full system prompt — specific, task-focused, not generic. No "you are a helpful assistant."]
@@ -197,6 +236,14 @@ Output format: [plain text | structured JSON | markdown | numbered list | etc.]
 Variable injections used:
   - {{#[node_id].[field]#}} — [what this variable contains]
   - {{#[node_id].[field]#}} — [what this variable contains]
+
+[Include this section only when output feeds a template-transform node:]
+Template-transform guidance:
+  Receives from this node: [list output field names and types, e.g., "summary (string)", "items (array)"]
+  Suggested layout: [describe the HTML card/table/accordion structure]
+  Jinja2 variables to declare: [variable names the template should bind]
+  Conditional sections: [any {% if %} logic, or "none"]
+  Loop sections: [any {% for %} logic, or "none"]
 ---
 ```
 
@@ -237,7 +284,10 @@ PROMPT COVERAGE: [N] LLM nodes specified, [M] agent nodes specified. All nodes i
 - System prompts MUST NOT begin with "You are a helpful assistant", "You are an AI", or any generic opener
 - Temperature for agent nodes MUST be ≤ 0.5
 - Temperature for classification and extraction nodes MUST be ≤ 0.3
+- Temperature for structured output nodes MUST be 0.1–0.2
+- ALWAYS make an explicit `structured_output: enabled | disabled` decision for each LLM node — never leave it implicit
+- ALWAYS include `Template-transform guidance` in the spec for any LLM node whose output (directly or via a code node) reaches a `template-transform` node
 - DO NOT generate YAML under any circumstances
 - DO NOT modify the node graph (do not add, remove, or rename nodes)
 - DO NOT reference node IDs that do not appear in the approved node plan
-- The model default is `claude-sonnet-4-6` with provider `anthropic` unless the requirements brief specifies otherwise or a node requires vision (in which case consult `docs/config/llm-settings.md` for the appropriate vision-capable model)
+- The model default is `claude-sonnet-4-6` with provider `anthropic` unless the requirements brief specifies otherwise or a node requires vision (in which case consult `skills/dify/references/config/llm-settings.md` for the appropriate vision-capable model)

@@ -23,7 +23,7 @@ If the approved plan contains only start, end, and variable-aggregator nodes wit
 
 ## References to Read Before Starting
 
-- `docs/patterns/error-handling.md` — Dify's error handling node configuration options, retry configuration schema, fail-branch wiring, variable-aggregator patterns
+- `skills/dify/references/patterns/error-handling.md` — Dify's error handling node configuration options, retry configuration schema, fail-branch wiring, variable-aggregator patterns
 
 ---
 

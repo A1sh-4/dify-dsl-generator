@@ -1,3 +1,11 @@
+---
+name: dify
+description: Generate production-ready Dify DSL YAML files for chatflows and workflows via a guided multi-agent pipeline
+user-invocable: true
+argument-hint: "Describe the Dify application you want to build"
+allowed-tools: Agent, Read, Write, WebFetch, WebSearch, Bash
+---
+
 # Skill: /dify — Dify DSL Generator
 
 ## Role and Purpose
@@ -344,8 +352,8 @@ Spawn the `dsl-generator` agent defined in `agents/dsl-generator.md`.
 
 **The dsl-generator will:**
 
-1. Read the relevant schema docs (`docs/schema/chatflow-schema.md` or `docs/schema/workflow-schema.md`)
-2. Read all relevant node type docs from `docs/nodes/`
+1. Read the relevant schema docs (`skills/dify/references/schema/chatflow-schema.md` or `skills/dify/references/schema/workflow-schema.md`)
+2. Read all relevant node type docs from `skills/dify/references/nodes/`
 3. Run `python scripts/generate_id.py` to generate all node IDs
 4. Assemble the complete YAML
 5. Run `python scripts/format_yaml.py` on the output for consistent indentation and field ordering
@@ -481,32 +489,32 @@ See Step 9 above. Show the errors, explain them plainly, offer retry or proceed-
 Agents in this pipeline have access to the following documents. Reference them by path when instructing agents.
 
 **Schema references:**
-- `docs/schema/chatflow-schema.md` — chatflow DSL top-level and node-level structure
-- `docs/schema/workflow-schema.md` — workflow DSL top-level and node-level structure
-- `docs/schema/variable-syntax.md` — `{{#node_id.field#}}` reference syntax and Jinja2 usage
-- `docs/schema/node-positioning.md` — x/y position algorithm and canvas layout rules
-- `docs/schema/edge-types.md` — edge handle values and ID format
+- `skills/dify/references/schema/chatflow-schema.md` — chatflow DSL top-level and node-level structure
+- `skills/dify/references/schema/workflow-schema.md` — workflow DSL top-level and node-level structure
+- `skills/dify/references/schema/variable-syntax.md` — `{{#node_id.field#}}` reference syntax and Jinja2 usage
+- `skills/dify/references/schema/node-positioning.md` — x/y position algorithm and canvas layout rules
+- `skills/dify/references/schema/edge-types.md` — edge handle values and ID format
 
 **Design patterns:**
-- `docs/patterns/chatflow-vs-workflow.md` — decision guide for choosing app type
-- `docs/patterns/rag-pattern.md` — RAG pipeline patterns with YAML examples
-- `docs/patterns/error-handling.md` — error strategy patterns and fallback designs
+- `skills/dify/references/patterns/chatflow-vs-workflow.md` — decision guide for choosing app type
+- `skills/dify/references/patterns/rag-pattern.md` — RAG pipeline patterns with YAML examples
+- `skills/dify/references/patterns/error-handling.md` — error strategy patterns and fallback designs
 
 **Features:**
-- `docs/features/plugins-marketplace.md` — common Dify marketplace plugins, how to discover and configure them
+- `skills/dify/references/features/plugins-marketplace.md` — common Dify marketplace plugins, how to discover and configure them
 
 **Configuration:**
-- `docs/config/prompt-engineering.md` — prompt writing guidelines and best practices for Dify LLM nodes
-- `docs/config/llm-settings.md` — model selection, temperature, max tokens, context window, vision settings
+- `skills/dify/references/config/prompt-engineering.md` — prompt writing guidelines and best practices for Dify LLM nodes
+- `skills/dify/references/config/llm-settings.md` — model selection, temperature, max tokens, context window, vision settings
 
-**Node type docs** (one file per node type in `docs/nodes/`):
+**Node type docs** (one file per node type in `skills/dify/references/nodes/`):
 - Agents should read the doc for each node type they plan to use before generating any configuration
 
 **Templates and examples:**
-- `assets/templates/starter-workflow.yml` — minimal workflow template
-- `assets/templates/starter-chatflow.yml` — minimal chatflow template
-- `assets/workflows/` — 5 working workflow examples (ground-truth structural references)
-- `assets/chatflows/` — 3 working chatflow examples (ground-truth structural references)
+- `skills/dify/assets/templates/starter-workflow.yml` — minimal workflow template
+- `skills/dify/assets/templates/starter-chatflow.yml` — minimal chatflow template
+- `skills/dify/assets/workflows/` — 5 working workflow examples (ground-truth structural references)
+- `skills/dify/assets/chatflows/` — 3 working chatflow examples (ground-truth structural references)
 
 ---
 

@@ -131,28 +131,175 @@ This is the standard pattern for Retrieval-Augmented Generation (RAG). The retri
 
 ## Structured Output
 
-When you need the LLM to return a specific JSON structure instead of free text, enable structured output.
+When you need the LLM to return a specific JSON structure instead of free text, enable structured output. The two fields are siblings at the top level of the node's `data` block — `structured_output_enabled` is the toggle and `structured_output` holds the JSON Schema.
+
+**Default (disabled) form — always include both fields even when disabled:**
+
+```yaml
+structured_output: {}
+structured_output_enabled: false
+```
+
+**Enabled form:**
 
 ```yaml
 structured_output_enabled: true
-structured_output_schema:
+structured_output:
   type: object
   properties:
     summary:
       type: string
     sentiment:
       type: string
-      enum: [positive, negative, neutral]
+      enum:
+        - positive
+        - negative
+        - neutral
     score:
       type: number
+    is_valid:
+      type: boolean
   required:
     - summary
     - sentiment
+    - score
+    - is_valid
+  additionalProperties: false
 ```
 
-- `structured_output_enabled`: Set to `true` to enforce JSON output matching the schema.
-- `structured_output_schema`: A JSON Schema object defining the expected shape.
-- The LLM will return a JSON object conforming to this schema. Access fields via `{{#llm_node_id.text#}}` and parse with a downstream Code node, or use Parameter Extractor for simpler cases.
+**Supported schema types:**
+
+| Type | Example value | Notes |
+|---|---|---|
+| `string` | `"hello"` | Plain text field; add `enum` to restrict to fixed choices |
+| `number` | `42`, `3.14` | Integer or float |
+| `boolean` | `true`, `false` | Yes/no flag |
+| `object` | `{"key": "value"}` | Nested object; define its own `properties`/`required` recursively |
+| `array` of strings | `["a", "b"]` | Set `items: {type: string}` |
+| `array` of numbers | `[1, 2, 3]` | Set `items: {type: number}` |
+| `array` of objects | `[{...}, {...}]` | Set `items: {type: object, properties: {...}, required: [...], additionalProperties: false}` |
+
+**Full nested schema example (complex real-world shape):**
+
+```yaml
+structured_output_enabled: true
+structured_output:
+  type: object
+  properties:
+    achievement_status:
+      type: object
+      properties:
+        annual_target_rate:
+          type: string
+          description: "Achievement rate explained from Count, Amount, and Pipeline perspectives."
+        process_kpis:
+          type: array
+          items:
+            type: object
+            properties:
+              metric_name:
+                type: string
+              current_value:
+                type: string
+              target_value:
+                type: string
+              calculation_details:
+                type: string
+              is_achieved:
+                type: string
+            required:
+              - metric_name
+              - current_value
+              - target_value
+              - calculation_details
+              - is_achieved
+            additionalProperties: false
+      required:
+        - annual_target_rate
+        - process_kpis
+      additionalProperties: false
+    focus_areas:
+      type: array
+      items:
+        type: object
+        properties:
+          company_name:
+            type: string
+          next_action:
+            type: string
+          reason_for_focus:
+            type: string
+        required:
+          - company_name
+          - next_action
+          - reason_for_focus
+        additionalProperties: false
+  required:
+    - achievement_status
+    - focus_areas
+  additionalProperties: false
+```
+
+**Conventions:**
+- Always set `additionalProperties: false` on every object (including nested ones) to prevent the LLM from hallucinating extra fields.
+- Always list every field in `required` unless you explicitly want it to be optional.
+- Use `description` on fields when the field name alone does not make the expected content obvious — the LLM reads these to know what to put there.
+- All values should be typed as `string` unless you specifically need numeric operations downstream. Strings are more robust to formatting variation.
+
+**Accessing structured output fields downstream:**
+
+When `structured_output_enabled: true`, Dify parses the LLM's JSON response and makes the resulting object available as the `output` field of the node. Map the whole `output` object to a single template variable — the Jinja2 template then navigates the nested structure with dot notation.
+
+In a **template-transform** node, map `output` → one variable (conventionally named `data`):
+
+```yaml
+variables:
+  - value_selector:
+      - 'llm_node_id'
+      - output
+    variable: data
+```
+
+Then in the Jinja2 template, access the entire schema hierarchy through `data`:
+
+```jinja2
+{# Top-level field #}
+{{ data.summary }}
+
+{# Nested object #}
+{{ data.achievement_status.annual_target_rate }}
+
+{# Array of objects — iterate with for loop #}
+{%- for kpi in data.achievement_status.process_kpis -%}
+  {{ kpi.metric_name }}: {{ kpi.current_value }}
+{%- endfor -%}
+
+{# Array of strings — iterate directly #}
+{%- for trend in data.analysis_results.deal_trends -%}
+  - {{ trend }}
+{%- endfor -%}
+```
+
+Map `output` as a whole and access any fields you need via `data.field` in the template. You do not need to reference every field — use only what the current node requires.
+
+**In a Code node downstream**, receive the same full dict and use only the keys relevant to that node's task:
+```python
+def main(data: dict) -> dict:
+    kpis = data.get('achievement_status', {}).get('process_kpis', [])
+    return {'kpi_count': len(kpis)}
+```
+
+The raw JSON string is also available as `{{#node_id.text#}}` if needed.
+
+**When to use structured output vs parameter-extractor:**
+
+| Situation | Use |
+|---|---|
+| Simple extraction of 1–5 flat fields | Parameter Extractor node |
+| Complex nested objects or arrays of objects | Structured output on LLM node |
+| The extracted data must be rendered by template-transform | Structured output (fields accessible individually) |
+| Model does not support function calling | Parameter Extractor with prompt inference mode |
+| You need reliable typing (numbers, booleans) | Structured output |
 
 ## Memory Configuration (chatflow only)
 
@@ -190,37 +337,52 @@ Replace `llm_node_id` with the actual `id` of your LLM node (the numeric string 
 
 ## Complete YAML Example
 
-A full LLM node with model, system + user prompts, and RAG context enabled:
+A full LLM node with all required fields, RAG context enabled, and structured output disabled (the standard default form):
 
 ```yaml
 - data:
     context:
       enabled: true
       variable_selector:
-        - knowledge_retrieval_node
+        - '1732007415800'
         - result
-    desc: ''
+    desc: Generates a grounded answer using retrieved knowledge base context
+    memory:
+      query_prompt_template: '{{#sys.query#}}'
+      role_prefix:
+        assistant: ''
+        user: ''
+      window:
+        enabled: false
+        size: 50
     model:
       completion_params:
-        frequency_penalty: 0
+        temperature: 0.3
         max_tokens: 2000
-        presence_penalty: 0
-        stop: []
-        temperature: 0.7
-        top_p: 1
       mode: chat
-      name: claude-3-5-sonnet-20241022
+      name: claude-sonnet-4-6
       provider: anthropic
     prompt_template:
-      - id: system-prompt-001
+      - edition_type: basic
+        id: a1b2c3d4-0000-0000-0000-000000000001
         role: system
-        text: "You are a knowledgeable assistant. Use the provided context to answer the user's question accurately and concisely. If the context does not contain relevant information, say so.\n\nContext:\n{{#knowledge_retrieval_node.result#}}"
-      - id: user-prompt-001
+        text: "You are a knowledgeable assistant. Use the provided context to answer\
+          \ the user's question accurately and concisely. If the context does not\
+          \ contain relevant information, say so clearly."
+      - edition_type: basic
+        id: a1b2c3d4-0000-0000-0000-000000000002
         role: user
-        text: "{{#start.user_question#}}"
+        text: '{{#sys.query#}}'
+    retry_config:
+      max_retries: 3
+      retry_enabled: true
+      retry_interval: 1000
     selected: false
+    structured_output: {}
+    structured_output_enabled: false
     title: Generate Answer
     type: llm
+    variables: []
     vision:
       enabled: false
   height: 98
@@ -237,6 +399,18 @@ A full LLM node with model, system + user prompts, and RAG context enabled:
   type: custom
   width: 244
 ```
+
+**Required fields checklist** — every LLM node in a valid DSL must have all of these:
+
+- `context` — even if disabled (`enabled: false, variable_selector: []`)
+- `memory` — even if disabled (`window.enabled: false`)
+- `model` — with `completion_params`, `mode`, `name`, `provider`
+- `prompt_template` — each entry must have `edition_type: basic`, `id` (UUIDv4), `role`, `text`
+- `retry_config` — always include; set `retry_enabled: true, max_retries: 3, retry_interval: 1000`
+- `structured_output` — use `{}` when disabled
+- `structured_output_enabled` — always present, `false` unless JSON output is required
+- `variables` — always `[]` unless the node uses variable injection from a non-prompt source
+- `vision` — always present, `enabled: false` unless image input is needed
 
 ## Common Mistakes
 
