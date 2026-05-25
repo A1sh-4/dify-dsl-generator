@@ -114,9 +114,26 @@ When the user chooses web-fetched content:
 ### Part D: Save Files and Generate Upload Guide
 
 **File naming convention:**
-- For Markdown articles: `[domain-slug]-[N].md` (e.g., `hr-policies-01.md`, `hr-policies-02.md`)
-- For plain text: `[domain-slug]-[N].txt`
-- For CSV: `[domain-slug]-qa.csv` (all Q&A pairs in a single file)
+
+Use a descriptive, lowercase kebab-case filename that reflects the content. Never use generic names like `document1`, `file`, or `test`.
+
+- `[domain-slug]-[N].[ext]` for articles and documents (e.g., `hr-policies-01.md`, `product-specs-03.docx`)
+- `[domain-slug]-qa.csv` for Q&A pair CSV files (all pairs in one file)
+- `[domain-slug]-data.[ext]` for structured data files (e.g., `inventory-data.xlsx`)
+
+**Supported file formats for knowledge bases** — use whichever format is most appropriate for the content:
+
+| Format | Best for | How to generate |
+| --- | --- | --- |
+| `.md` / `.txt` | Articles, policies, documentation, FAQs | Write directly as text |
+| `.csv` | Q&A pairs, structured records, product lists | Write directly as text |
+| `.html` | Web-style content with formatting | Write directly as text |
+| `.xlsx` | Tables, spreadsheets, multi-sheet data | Write a Python script using `openpyxl`; run it to produce the file |
+| `.docx` | Word-style documents with headings | Write a Python script using `python-docx`; run it to produce the file |
+| `.pdf` | Formal reports, invoices, contracts | Write a Python script using `fpdf2`; run it to produce the file |
+| `.pptx` | Slide decks, presentations | Write a Python script using `python-pptx`; run it to produce the file |
+
+For binary formats (xlsx, docx, pdf, pptx): write the generation script, run it with `.venv/Scripts/python`, verify the file was created, then report it in the output summary like any other file.
 
 **Save location:** All knowledge base files go into `output/[project-name]/knowledge/` using the project folder path passed in from the orchestrator. The `[project-name]` comes from the skill — do not re-derive it here.
 
@@ -205,20 +222,25 @@ After indexing, try these sample queries to verify retrieval quality:
 
 ### Part E: Generate Sample Input Files (only if file inputs flag is true)
 
-If the skill orchestrator indicated that the workflow accepts file uploads (e.g., a PDF, CSV, or text file input in the start node), generate one or more realistic sample input files so the user can test the workflow immediately after import.
+If the skill orchestrator indicated that the workflow accepts file uploads, generate realistic sample input files so the user can test the workflow immediately after import.
 
-**File types to generate based on the start node's input variable type:**
+**Format rule: use whatever format the workflow actually expects.** If the workflow is designed to process invoices as PDF, generate a PDF. If it processes product sheets as XLSX, generate an XLSX. Match the real-world format — do not substitute a simpler format just because it is easier to generate.
 
-| Start node input type | Sample file to generate | Format guidance |
-| --- | --- | --- |
-| PDF / document upload | A realistic 1–2 page document in the app's domain | Write as Markdown, save as `.md` (Dify accepts Markdown as a document input for testing) |
-| CSV / spreadsheet | A realistic CSV with 10–20 rows of domain-appropriate data | Proper header row, realistic values, no lorem ipsum |
-| Plain text / `.txt` | A 200–400 word text document relevant to the domain | Natural prose, realistic content |
-| Image | Note only: write a text file `sample-inputs/README.md` explaining what kind of image to use | Do not generate binary image files |
+**How to generate each format:**
+
+- **Text-native** (`.md`, `.txt`, `.csv`, `.html`, `.json`) — write the file content directly
+- **Binary formats** (`.xlsx`, `.docx`, `.pdf`, `.pptx`) — write a Python generation script and run it with `.venv/Scripts/python`; verify the file exists before reporting it
+
+**Content rules:**
+
+- The file must be realistic — domain-appropriate content, real-looking data, correct structure
+- No placeholder text, no lorem ipsum, no "Sample data here"
+- Size: enough to be a meaningful test — a 1–2 page document, a 10–20 row spreadsheet, a slide deck with 3–5 slides
+- If multiple input files would make the test richer (e.g., three different invoices to batch-test), generate 2–3 variants
 
 **Save location:** `output/[project-name]/sample-inputs/[descriptive-filename].[ext]`
 
-**Naming:** Use a descriptive filename that reflects the content — e.g., `sample-invoice.md`, `sample-products.csv`, `sample-support-ticket.txt`. Never use `sample1`, `test`, or `document`.
+**Naming:** Use a descriptive filename — e.g., `invoice-acme-corp.pdf`, `product-catalog-q1.xlsx`, `support-ticket-login-issue.txt`. Never use `sample1`, `test`, or `document`.
 
 ---
 
