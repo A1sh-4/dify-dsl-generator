@@ -193,12 +193,42 @@ If neither condition applies, skip Step 4 entirely and proceed to Step 5.
 
 ---
 
-### Step 5 — Spawn node-planner (MANDATORY)
+### Step 5 — Flow decomposition Q&A + Spawn node-planner (MANDATORY)
+
+#### Step 5a — Ask flow decomposition questions (MANDATORY, before spawning node-planner)
+
+**IMPORTANT: Agents cannot ask the user questions — only you can. You must do this step yourself before spawning anything.**
+
+The requirements brief tells you *what* the application does. Before node-planner can design atomic nodes, you need to know *exactly how* it does it — every step in sequence, every branch, every transformation, every input and output at each point.
+
+Review the requirements brief and what you learned in Step 4. Identify every part of the flow that is ambiguous, under-specified, or could be implemented in more than one way. Then ask the user about those specific gaps — in a single message, never one question at a time.
+
+Focus your questions on these areas (ask only what is not already answered clearly):
+
+- **Sequence:** What happens at each step from the moment the user provides input to the moment they see a response? Walk through it action by action.
+- **Branching:** At which points does the flow split? What condition triggers each branch, and what does each path do?
+- **Data at each step:** What information enters a step, what does that step produce, and what does the next step consume?
+- **External calls:** For each API or service call — what exact data is sent, and which specific fields from the response are used downstream?
+- **Transformations:** Where is data reshaped, calculated, filtered, or combined? Is that logic simple (a formula, a string join) or does it require judgment (an LLM)?
+- **Output composition:** What specific pieces of information appear in the final response? Are any of them conditional (shown only sometimes)?
+- **Error / edge cases:** What should happen if a retrieval returns nothing, an API call fails, or a classifier is uncertain?
+
+Ask all your questions in one message. Keep each question short and concrete — the user should be able to answer in a sentence or two per question. Wait for all answers before proceeding.
+
+If the flow is already fully specified down to this level of detail from the requirements brief and the user's description, skip this step and proceed directly to Step 5b.
+
+**Store the user's answers.** Pass them to node-planner alongside everything else.
+
+---
+
+#### Step 5b — Spawn node-planner
 
 Spawn the `node-planner` agent defined in `agents/node-planner.md`.
 
 **Pass to the agent:**
+
 - The complete requirements brief
+- The user's flow decomposition answers from Step 5a (if collected)
 - Plugin configurations (from plugin-finder, if used)
 - Integration configurations (from integration-builder, if used)
 - RAG design package (from knowledge-architect, if used)
@@ -212,8 +242,9 @@ Spawn the `node-planner` agent defined in `agents/node-planner.md`.
 **WAIT FOR EXPLICIT APPROVAL.** Do not move to Step 6 until the user explicitly approves. Accepted approval signals (in any language): "approve", "looks good", "yes", "go", "proceed", "ok", "perfect", "ship it", or clear equivalents in the user's language.
 
 **If the user requests changes:**
+
 - Collect the requested changes
-- Pass them back to `node-planner` along with the original plan and requirements brief
+- Pass them back to `node-planner` along with the original plan, requirements brief, and Step 5a answers
 - Get a revised plan
 - Show the revised plan to the user
 - Wait for approval again
