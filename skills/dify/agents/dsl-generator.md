@@ -26,17 +26,27 @@ Read ALL of the following before writing a single line of YAML:
 - `skills/dify/references/schema/edge-types.md` — edge ID format and handle values
 - `skills/dify/references/schema/variable-syntax.md` — correct variable reference syntax
 
-**Node docs — read for each node type appearing in the approved plan:**
-- `skills/dify/references/nodes/start.md`
-- `skills/dify/references/nodes/llm.md` (if any LLM nodes)
-- `skills/dify/references/nodes/answer.md` (if chatflow)
-- `skills/dify/references/nodes/end.md` (if workflow)
-- `skills/dify/references/nodes/if-else.md` (if any conditional nodes)
-- `skills/dify/references/nodes/knowledge-retrieval.md` (if RAG is used)
-- `skills/dify/references/nodes/http.md` (if any HTTP nodes)
-- `skills/dify/references/nodes/code.md` (if any code nodes)
-- `skills/dify/references/nodes/tool.md` (if any tool/plugin nodes)
-- Any other node types present in the plan
+**Node docs — read the doc for every node type that appears in the approved plan:**
+
+- `skills/dify/references/nodes/start.md` — always required
+- `skills/dify/references/nodes/llm.md` — if any LLM nodes
+- `skills/dify/references/nodes/answer.md` — if chatflow
+- `skills/dify/references/nodes/end.md` — if workflow
+- `skills/dify/references/nodes/if-else.md` — if any if-else nodes
+- `skills/dify/references/nodes/question-classifier.md` — if any question-classifier nodes
+- `skills/dify/references/nodes/knowledge-retrieval.md` — if any knowledge-retrieval nodes
+- `skills/dify/references/nodes/http.md` — if any http-request nodes
+- `skills/dify/references/nodes/code.md` — if any code nodes
+- `skills/dify/references/nodes/tool.md` — if any tool nodes
+- `skills/dify/references/nodes/parameter-extractor.md` — if any parameter-extractor nodes
+- `skills/dify/references/nodes/template-transform.md` — if any template-transform nodes (near-mandatory in every flow)
+- `skills/dify/references/nodes/variable-aggregator.md` — if any variable-aggregator nodes
+- `skills/dify/references/nodes/variable-assigner.md` — if any variable-assigner nodes
+- `skills/dify/references/nodes/iteration.md` — if any iteration nodes
+- `skills/dify/references/nodes/doc-extractor.md` — if any doc-extractor nodes
+- `skills/dify/references/nodes/list-operator.md` — if any list-operator nodes
+- `skills/dify/references/nodes/human-input.md` — if any human-input nodes
+- `skills/dify/references/nodes/agent.md` — if any agent nodes
 
 **Templates (use as structural reference, not as copy-paste):**
 - If chatflow: `skills/dify/assets/templates/starter-chatflow.yml`

@@ -21,10 +21,29 @@ Before designing the graph, read the following documentation files:
 
 - `skills/dify/references/schema/node-positioning.md` — position calculation rules and canvas layout conventions
 - `skills/dify/references/patterns/chatflow-vs-workflow.md` — confirms which terminal node and trigger type to use
-- `skills/dify/references/nodes/start.md` — start node structure and supported input variable types
-- Any node-type docs from `skills/dify/references/nodes/` that correspond to node types listed in the requirements brief's "RECOMMENDED NODE TYPES" section
+- `skills/dify/references/patterns/parallel-execution.md` — when to fan out, when to aggregate, convergence strategies
 
-Read the relevant node docs to understand required fields, optional fields, and constraints before selecting nodes.
+**Node reference docs — read ALL of the following before Step 2.** These define what each node type does, when it is the right choice, what it requires as inputs, and what it produces as outputs. Your node selection decisions in Step 2 must be grounded in these docs — do not select a node type you have not read.
+
+- `skills/dify/references/nodes/start.md` — entry point; defines input variables and the `sys.query` system variable
+- `skills/dify/references/nodes/llm.md` — language model: generation, reasoning, summarization, nuanced judgment
+- `skills/dify/references/nodes/answer.md` — streaming terminal node for chatflows; when and how to use it
+- `skills/dify/references/nodes/end.md` — terminal node for workflows; how to return named output variables
+- `skills/dify/references/nodes/if-else.md` — binary or multi-branch routing based on variable values; not for category routing
+- `skills/dify/references/nodes/question-classifier.md` — LLM-powered category routing; use instead of llm+if-else when routing by intent
+- `skills/dify/references/nodes/knowledge-retrieval.md` — fetch documents from a Dify knowledge base; required for any RAG flow
+- `skills/dify/references/nodes/http.md` — call any external REST API endpoint; when no marketplace plugin exists
+- `skills/dify/references/nodes/code.md` — Python/JS for data transformation, JSON parsing, arithmetic; use instead of llm for logic
+- `skills/dify/references/nodes/tool.md` — invoke a Dify marketplace plugin; preferred over http when a plugin exists
+- `skills/dify/references/nodes/parameter-extractor.md` — extract named fields from text; use instead of llm for structured extraction
+- `skills/dify/references/nodes/template-transform.md` — Jinja2 HTML formatter; the default output renderer before answer/end
+- `skills/dify/references/nodes/variable-aggregator.md` — merge outputs from parallel branches into one combined value
+- `skills/dify/references/nodes/variable-assigner.md` — write a value into a conversation variable (chatflow only)
+- `skills/dify/references/nodes/iteration.md` — loop over a list and process each item one by one
+- `skills/dify/references/nodes/doc-extractor.md` — extract text content from an uploaded file before passing to an LLM
+- `skills/dify/references/nodes/list-operator.md` — filter, sort, or slice a list variable before iteration or display
+- `skills/dify/references/nodes/human-input.md` — pause the flow and wait for a human to provide input or approval
+- `skills/dify/references/nodes/agent.md` — LLM with a tool-use loop (ReAct or function-call); use when the number of tool calls is not fixed in advance
 
 ---
 
