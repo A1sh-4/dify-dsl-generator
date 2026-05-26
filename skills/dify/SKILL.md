@@ -1,9 +1,15 @@
 ---
 name: dify
 description: Generate production-ready Dify DSL YAML files for chatflows and workflows via a guided multi-agent pipeline
-user-invocable: true
-argument-hint: "Describe the Dify application you want to build"
-allowed-tools: Agent, Read, Write, WebFetch, WebSearch, Bash
+license: MIT
+compatibility: Requires Python 3.8+ and a .venv virtual environment at the project root. Run scripts via .venv/Scripts/python. Requires internet access for plugin/API research.
+metadata:
+  version: "0.1.0"
+  author: A1sh
+  homepage: https://github.com/A1sh/dify-dsl-generator
+  user-invocable: "true"
+  argument-hint: "Describe the Dify application you want to build"
+allowed-tools: Agent Read Write WebFetch WebSearch Bash
 ---
 
 # Skill: /dify — Dify DSL Generator
@@ -30,6 +36,35 @@ These rules are non-negotiable. Violating any of them breaks the pipeline.
 8. **Never expose internal agent names to the user.** Do not say "I am now spawning requirements-analyzer." Say "Let me analyze what you need..." instead. The user experiences a conversation, not an engineering pipeline.
 9. **Keep status updates brief.** One sentence per update. The node plan is the one place where you show detailed structure to the user — everything else is a brief progress note.
 10. **After validation passes, always deliver full import instructions.** Do not assume the user knows how to import a DSL file into Dify.
+
+---
+
+## Reverse-Direction Mode — Explain or Review an Existing DSL
+
+Before entering the 10-Step Pipeline, check whether the user is invoking a reverse-direction operation on an existing DSL file.
+
+**Detect reverse-direction intent** if the user's input matches any of these patterns (in any language):
+- Contains a file path ending in `.yml` or `.yaml`
+- Uses words like "explain", "what does this do", "describe", "summarize this workflow", "walk me through this DSL"
+- Uses words like "review", "audit", "check", "improve", "critique", "what's wrong with", "is this good"
+
+**If reverse-direction intent is detected:**
+
+1. Confirm the file path with the user if it is ambiguous or not provided. Ask: "What is the path to the DSL file you want me to [explain | review]?"
+2. Once you have a valid file path, route immediately to the appropriate agent — do NOT enter the 10-Step Pipeline.
+
+| User intent | Agent to spawn |
+|---|---|
+| Explain / describe / summarize | `dsl-explainer` (`skills/dify/agents/dsl-explainer.md`) |
+| Review / audit / check / improve | `dsl-reviewer` (`skills/dify/agents/dsl-reviewer.md`) |
+
+Pass to the agent:
+- The absolute file path to the DSL file
+- Any additional context the user provided (e.g., "focus on security" or "I want to know what it does so I can modify it")
+
+Wait for the agent to complete and present its output to the user. After presenting, offer: "Would you like me to build a new Dify app, or is there anything else I can help with on this file?"
+
+**If no reverse-direction intent is detected:** proceed to Step 1 of the 10-Step Pipeline below.
 
 ---
 
@@ -60,7 +95,7 @@ Do not prompt them to fill in a template. Do not ask multiple structured questio
 
 ### Step 3 — Spawn requirements-analyzer (MANDATORY)
 
-Spawn the `requirements-analyzer` agent defined in `agents/requirements-analyzer.md`.
+Spawn the `requirements-analyzer` agent defined in `skills/dify/agents/requirements-analyzer.md`.
 
 **Pass to the agent:**
 - The user's raw description, verbatim
@@ -85,7 +120,7 @@ This phase is conditional. Run the applicable sub-steps in parallel if multiple 
 
 #### 4a — External Services (run if any external service is mentioned)
 
-Spawn `plugin-finder` (defined in `agents/plugin-finder.md`) first.
+Spawn `plugin-finder` (defined in `skills/dify/agents/plugin-finder.md`) first.
 
 Pass to plugin-finder:
 - The list of external services from the requirements brief
@@ -97,10 +132,10 @@ Pass to plugin-finder:
 - Note in the context: "Plugin found for [service] — using plugin, no API research needed"
 
 **If plugin-finder finds no plugin:**
-- Spawn `api-researcher` (defined in `agents/api-researcher.md`)
+- Spawn `api-researcher` (defined in `skills/dify/agents/api-researcher.md`)
 - Pass: service name, requirements brief, and any URLs or docs the user mentioned
 - Wait for: API brief (auth method, relevant endpoints, request/response shapes, rate limits)
-- Then spawn `integration-builder` (defined in `agents/integration-builder.md`)
+- Then spawn `integration-builder` (defined in `skills/dify/agents/integration-builder.md`)
 - Pass: the API brief from api-researcher + requirements brief
 - Wait for: HTTP node configurations (headers, body templates, variable mappings)
 - Store the integration configurations
@@ -169,7 +204,7 @@ I need a few quick details to generate your knowledge base content:
    (Synthetic is faster. Real web content gives actual facts and terminology — but verify licenses before production use.)
 ```
 
-Wait for all four answers, then spawn `dummy-data-generator` (defined in `agents/dummy-data-generator.md`).
+Wait for all four answers, then spawn `dummy-data-generator` (defined in `skills/dify/agents/dummy-data-generator.md`).
 
 Pass to dummy-data-generator:
 
@@ -184,7 +219,7 @@ Wait for dummy-data-generator to complete and confirm the files are written to `
 
 ##### Sub-step 4b-4: Spawn knowledge-architect (always, with all collected context)
 
-Now spawn `knowledge-architect` (defined in `agents/knowledge-architect.md`).
+Now spawn `knowledge-architect` (defined in `skills/dify/agents/knowledge-architect.md`).
 
 Pass ALL of the following:
 
@@ -236,7 +271,7 @@ If the flow is already fully specified down to this level of detail from the req
 
 #### Step 5b — Spawn node-planner
 
-Spawn the `node-planner` agent defined in `agents/node-planner.md`.
+Spawn the `node-planner` agent defined in `skills/dify/agents/node-planner.md`.
 
 **Pass to the agent:**
 
@@ -296,7 +331,7 @@ If the plan has no `template-transform` nodes at all, still include the block wi
 
 ---
 
-Spawn the `prompt-engineer` agent defined in `agents/prompt-engineer.md`.
+Spawn the `prompt-engineer` agent defined in `skills/dify/agents/prompt-engineer.md`.
 
 **Pass to the agent:**
 
@@ -318,7 +353,7 @@ Run this step IF the approved node plan contains any of the following: HTTP node
 
 Skip this step if the workflow is entirely LLM-to-LLM with no external calls.
 
-Spawn the `error-strategy` agent defined in `agents/error-strategy.md`.
+Spawn the `error-strategy` agent defined in `skills/dify/agents/error-strategy.md`.
 
 **Pass to the agent:**
 - The approved node graph plan
@@ -334,7 +369,7 @@ Store the error strategy additions. They will be passed to `dsl-generator` in St
 
 ### Step 8 — Spawn dsl-generator (MANDATORY)
 
-Spawn the `dsl-generator` agent defined in `agents/dsl-generator.md`.
+Spawn the `dsl-generator` agent defined in `skills/dify/agents/dsl-generator.md`.
 
 **Pass to the agent — all of the following:**
 
@@ -354,9 +389,9 @@ Spawn the `dsl-generator` agent defined in `agents/dsl-generator.md`.
 
 1. Read the relevant schema docs (`skills/dify/references/schema/chatflow-schema.md` or `skills/dify/references/schema/workflow-schema.md`)
 2. Read all relevant node type docs from `skills/dify/references/nodes/`
-3. Run `python scripts/generate_id.py` to generate all node IDs
+3. Run `.venv/Scripts/python skills/dify/scripts/generate_id.py` to generate all node IDs
 4. Assemble the complete YAML
-5. Run `python scripts/format_yaml.py` on the output for consistent indentation and field ordering
+5. Run `.venv/Scripts/python skills/dify/scripts/format_yaml.py` on the output for consistent indentation and field ordering
 6. Write the YAML to `output/[project-name]/[project-name].yml`
 7. Write `output/[project-name]/SETUP.md` — the complete step-by-step Dify setup guide
 8. Display the complete YAML in a code block
@@ -369,19 +404,19 @@ Do not present the YAML to the user yourself — `dsl-generator` displays it. Yo
 
 ### Step 9 — Validation (AUTOMATIC + CONDITIONAL)
 
-**Automatic path:** The `hooks/post-write-validate.sh` hook fires automatically whenever a `.yml` file is written anywhere under `output/`. It runs `python scripts/validate_workflow.py` and outputs a pass/fail result. Watch for this output.
+**Automatic path:** The `skills/dify/hooks/post-write-validate.sh` hook fires automatically whenever a `.yml` file is written anywhere under `output/`. It runs `.venv/Scripts/python skills/dify/scripts/validate_workflow.py` and outputs a pass/fail result. Watch for this output.
 
 **If the hook output shows PASS (`✓ DSL validation passed`):**
 Proceed directly to Step 10.
 
 **If the hook output shows FAIL, or if the hook did not fire:**
-Spawn the `dsl-validator` agent defined in `agents/dsl-validator.md`.
+Spawn the `dsl-validator` agent defined in `skills/dify/agents/dsl-validator.md`.
 
 Pass:
 - The path to the generated `.yml` file
 - The validation errors reported by the hook (if any)
 
-The `dsl-validator` will diagnose each error, apply targeted fixes, re-run `python scripts/validate_workflow.py`, and repeat until the file passes.
+The `dsl-validator` will diagnose each error, apply targeted fixes, re-run `.venv/Scripts/python skills/dify/scripts/validate_workflow.py`, and repeat until the file passes.
 
 Wait for a clean PASS before proceeding to Step 10.
 
@@ -499,6 +534,7 @@ Agents in this pipeline have access to the following documents. Reference them b
 - `skills/dify/references/patterns/chatflow-vs-workflow.md` — decision guide for choosing app type
 - `skills/dify/references/patterns/rag-pattern.md` — RAG pipeline patterns with YAML examples
 - `skills/dify/references/patterns/error-handling.md` — error strategy patterns and fallback designs
+- `skills/dify/references/patterns/conversation-memory.md` — stateful chatflow patterns: conversation variables, variable-assigner, multi-step forms, state machines
 
 **Features:**
 - `skills/dify/references/features/plugins-marketplace.md` — common Dify marketplace plugins, how to discover and configure them
@@ -524,17 +560,19 @@ Each agent in the pipeline is defined in its own file. Spawn agents by following
 
 | Agent | File | When to spawn |
 |---|---|---|
-| requirements-analyzer | `agents/requirements-analyzer.md` | Step 3 — always, first |
-| plugin-finder | `agents/plugin-finder.md` | Step 4a — if external service mentioned |
-| api-researcher | `agents/api-researcher.md` | Step 4a — if no plugin found |
-| integration-builder | `agents/integration-builder.md` | Step 4a — after api-researcher |
-| knowledge-architect | `agents/knowledge-architect.md` | Step 4b — if RAG needed |
-| dummy-data-generator | `agents/dummy-data-generator.md` | Step 4b sub-agent — if user has no sample data |
-| node-planner | `agents/node-planner.md` | Step 5 — always |
-| prompt-engineer | `agents/prompt-engineer.md` | Step 6 — always |
-| error-strategy | `agents/error-strategy.md` | Step 7 — if HTTP/tool/plugin nodes in plan |
-| dsl-generator | `agents/dsl-generator.md` | Step 8 — always |
-| dsl-validator | `agents/dsl-validator.md` | Step 9 — if hook fails or hook did not fire |
+| requirements-analyzer | `skills/dify/agents/requirements-analyzer.md` | Step 3 — always, first |
+| plugin-finder | `skills/dify/agents/plugin-finder.md` | Step 4a — if external service mentioned |
+| api-researcher | `skills/dify/agents/api-researcher.md` | Step 4a — if no plugin found |
+| integration-builder | `skills/dify/agents/integration-builder.md` | Step 4a — after api-researcher |
+| knowledge-architect | `skills/dify/agents/knowledge-architect.md` | Step 4b — if RAG needed |
+| dummy-data-generator | `skills/dify/agents/dummy-data-generator.md` | Step 4b sub-agent — if user has no sample data |
+| node-planner | `skills/dify/agents/node-planner.md` | Step 5 — always |
+| prompt-engineer | `skills/dify/agents/prompt-engineer.md` | Step 6 — always |
+| error-strategy | `skills/dify/agents/error-strategy.md` | Step 7 — if HTTP/tool/plugin nodes in plan |
+| dsl-generator | `skills/dify/agents/dsl-generator.md` | Step 8 — always |
+| dsl-validator | `skills/dify/agents/dsl-validator.md` | Step 9 — if hook fails or hook did not fire |
+| dsl-explainer | `skills/dify/agents/dsl-explainer.md` | Reverse mode — when user asks to explain an existing DSL file |
+| dsl-reviewer | `skills/dify/agents/dsl-reviewer.md` | Reverse mode — when user asks to review or audit an existing DSL file |
 
 ---
 
@@ -542,9 +580,10 @@ Each agent in the pipeline is defined in its own file. Spawn agents by following
 
 The following Python scripts are pre-approved for use. Instruct agents to run them at the appropriate points.
 
-- `python scripts/generate_id.py` — generates a UUID in Dify node ID format; `dsl-generator` MUST use this for every node ID
-- `python scripts/format_yaml.py <path>` — normalizes indentation and field ordering; `dsl-generator` MUST run this before writing the file
-- `python scripts/validate_workflow.py <path>` — validates schema, required fields, and node references; `dsl-validator` uses this
+- `.venv/Scripts/python skills/dify/scripts/generate_id.py` — generates a UUID in Dify node ID format; `dsl-generator` MUST use this for every node ID
+- `.venv/Scripts/python skills/dify/scripts/format_yaml.py <path>` — normalizes indentation and field ordering; `dsl-generator` MUST run this before writing the file
+- `.venv/Scripts/python skills/dify/scripts/validate_workflow.py <path>` — validates schema, required fields, and node references; `dsl-validator` uses this
+- `.venv/Scripts/python skills/dify/scripts/preview_graph.py <path>` — generates a Mermaid flowchart from the DSL node graph; useful for showing node topology to the user alongside the plan
 
 ---
 
@@ -552,4 +591,4 @@ The following Python scripts are pre-approved for use. Instruct agents to run th
 
 All generated YAML files are written to the `output/` directory. File names should be descriptive and kebab-cased (e.g., `customer-support-chatbot.yml`, `document-summarizer-workflow.yml`). The `dsl-generator` agent chooses the file name based on the application name in the requirements brief.
 
-The post-write validation hook (`hooks/post-write-validate.sh`) fires automatically for any `.yml` file written to this directory. Watch for its output and act on it as described in Step 9.
+The post-write validation hook (`skills/dify/hooks/post-write-validate.sh`) fires automatically for any `.yml` file written to this directory. Watch for its output and act on it as described in Step 9.

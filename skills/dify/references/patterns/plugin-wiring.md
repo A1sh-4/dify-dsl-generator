@@ -8,7 +8,7 @@ This document covers the complete process of wiring a marketplace plugin into a 
 
 **Always check for a marketplace plugin before building an HTTP node.** The plugin-finder agent performs this check automatically. Only fall back to an HTTP node when no plugin exists.
 
-See also: `docs/features/plugins-marketplace.md` for the plugin catalog and credential configuration.
+See also: `skills/dify/references/features/plugins-marketplace.md` for the plugin catalog and credential configuration.
 
 ---
 
@@ -16,7 +16,7 @@ See also: `docs/features/plugins-marketplace.md` for the plugin catalog and cred
 
 ### Step 1: Find the Plugin
 
-Browse `marketplace.dify.ai` or refer to `docs/features/plugins-marketplace.md`. Identify:
+Browse `marketplace.dify.ai` or refer to `skills/dify/references/features/plugins-marketplace.md`. Identify:
 - **author** — the plugin's namespace prefix (typically `langgenius`)
 - **plugin-name** — the plugin's unique slug (e.g., `brave`, `firecrawl`, `stability`)
 - **version** — the installed version (e.g., `0.0.3`)
@@ -118,7 +118,7 @@ or
 {{#tool_node_id.files#}}
 ```
 
-Always confirm the output field name from `docs/features/plugins-marketplace.md` before wiring.
+Always confirm the output field name from `skills/dify/references/features/plugins-marketplace.md` before wiring.
 
 ### Step 6: Handle "Plugin Not Installed" Errors
 
@@ -742,7 +742,7 @@ Use this matrix to determine whether to use a plugin tool node or a raw HTTP nod
 
 **Rule:** When in doubt, use a plugin. Plugins eliminate credential management from YAML, are maintained by the Dify team, and produce more readable DSL. HTTP nodes are appropriate when plugins do not exist or cannot satisfy the specific API requirements.
 
-See also: `docs/nodes/http.md` for HTTP node configuration when no plugin exists.
+See also: `skills/dify/references/nodes/http.md` for HTTP node configuration when no plugin exists.
 
 ---
 
@@ -769,7 +769,7 @@ Different plugins have different output fields:
 - Stability AI and image tools output `files` — reference as `{{#node_id.files#}}`
 - Some tools output `json` — reference the specific field path
 
-Always verify the output field name in `docs/features/plugins-marketplace.md` before wiring.
+Always verify the output field name in `skills/dify/references/features/plugins-marketplace.md` before wiring.
 
 ### Omitting the `dependencies` block
 
@@ -786,10 +786,10 @@ Plugin authentication is entirely workspace-managed. DSL files are credential-fr
 
 ## Multi-Plugin Wiring Example
 
-When a workflow uses more than one plugin, list all plugins in the `dependencies` block and add one tool node per plugin. See `docs/patterns/parallel-execution.md` for an example that runs Brave Search and Jina Reader in parallel, and `docs/patterns/agentic-pattern.md` for an agent node that can call multiple plugins autonomously based on LLM decisions.
+When a workflow uses more than one plugin, list all plugins in the `dependencies` block and add one tool node per plugin. See `skills/dify/references/patterns/parallel-execution.md` for an example that runs Brave Search and Jina Reader in parallel, and `skills/dify/references/patterns/agentic-pattern.md` for an agent node that can call multiple plugins autonomously based on LLM decisions.
 
 See also:
-- `docs/features/plugins-marketplace.md` — complete plugin catalog with provider IDs, tool names, and output fields
-- `docs/nodes/tool.md` — full tool node DSL field reference
-- `docs/patterns/agentic-pattern.md` — wiring plugins into agent nodes for dynamic tool selection
-- `docs/patterns/error-handling.md` — adding fail-branch to tool nodes when plugin availability matters
+- `skills/dify/references/features/plugins-marketplace.md` — complete plugin catalog with provider IDs, tool names, and output fields
+- `skills/dify/references/nodes/tool.md` — full tool node DSL field reference
+- `skills/dify/references/patterns/agentic-pattern.md` — wiring plugins into agent nodes for dynamic tool selection
+- `skills/dify/references/patterns/error-handling.md` — adding fail-branch to tool nodes when plugin availability matters

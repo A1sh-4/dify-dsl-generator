@@ -226,4 +226,4 @@ context:
     - result
 ```
 
-See `docs/nodes/knowledge-retrieval.md` for the full node configuration reference and `docs/patterns/rag-pipeline.md` for end-to-end RAG workflow examples.
+See `skills/dify/references/nodes/knowledge-retrieval.md` for the full node configuration reference and `skills/dify/references/patterns/rag-pipeline.md` for end-to-end RAG workflow examples.

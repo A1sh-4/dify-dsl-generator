@@ -2,7 +2,7 @@
 Comprehensive pytest suite for scripts/validate_workflow.py
 
 Run from project root with the project venv:
-    .venv/Scripts/python -m pytest tests/test_validate_workflow.py -v
+    .venv/Scripts/python -m pytest skills/dify/tests/test_validate_workflow.py -v
 
 Coverage targets every check in validate_workflow.py (checks 1-14).
 """
@@ -739,7 +739,7 @@ class TestLLMNode:
 class TestAssetFiles:
     """Smoke-test all asset YAML files against the validator."""
 
-    _ASSETS_ROOT = Path(__file__).parent.parent / "skills" / "dify" / "assets"
+    _ASSETS_ROOT = Path(__file__).parent.parent / "assets"
 
     def _collect_yamls(self):
         return list(self._ASSETS_ROOT.rglob("*.yml"))
@@ -749,7 +749,7 @@ class TestAssetFiles:
         assert len(yamls) > 0, "No .yml files found under skills/dify/assets/"
 
     @pytest.mark.parametrize("yml_path", [
-        p for p in (Path(__file__).parent.parent / "skills" / "dify" / "assets").rglob("*.yml")
+        p for p in (Path(__file__).parent.parent / "assets").rglob("*.yml")
     ])
     def test_asset_file_passes_validation(self, yml_path):
         with open(yml_path, "r", encoding="utf-8") as fh:

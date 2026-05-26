@@ -352,6 +352,6 @@ This means DSL files are safe to share — they contain no secrets. The DSL refe
 
 ## Related Documentation
 
-- See `docs/nodes/tool.md` for the full tool node DSL schema.
-- See `docs/features/api-extensions.md` for custom API endpoints (alternative to plugins for proprietary APIs).
-- See `docs/nodes/http.md` for HTTP node configuration when no plugin exists.
+- See `skills/dify/references/nodes/tool.md` for the full tool node DSL schema.
+- See `skills/dify/references/features/api-extensions.md` for custom API endpoints (alternative to plugins for proprietary APIs).
+- See `skills/dify/references/nodes/http.md` for HTTP node configuration when no plugin exists.

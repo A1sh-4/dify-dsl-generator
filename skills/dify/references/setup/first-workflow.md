@@ -8,11 +8,11 @@ This is a complete end-to-end walkthrough: from invoking the `/dify` skill to ha
 
 Before starting, confirm you have:
 
-- This plugin installed and working (see `docs/setup/installation.md`)
-- A Dify instance running — Cloud or self-hosted (see `docs/setup/dify-setup.md`)
-- At least one LLM model provider configured in Dify (see `docs/setup/model-configuration.md`)
+- This plugin installed and working (see `skills/dify/references/setup/installation.md`)
+- A Dify instance running — Cloud or self-hosted (see `skills/dify/references/setup/dify-setup.md`)
+- At least one LLM model provider configured in Dify (see `skills/dify/references/setup/model-configuration.md`)
 - Claude Code open in a terminal or the desktop app
-- If your workflow uses a knowledge base: the knowledge base created and indexed (see `docs/setup/knowledge-base-setup.md`)
+- If your workflow uses a knowledge base: the knowledge base created and indexed (see `skills/dify/references/setup/knowledge-base-setup.md`)
 
 ---
 
@@ -234,7 +234,7 @@ The app is now live. Any changes you make in the canvas editor require clicking 
 | Error message | Cause | Fix |
 |---|---|---|
 | "Invalid DSL version" | The `version` field value is unrecognized | Set `version: 0.1.3` in the YAML |
-| "Unknown node type" | A node's `type` string does not match a known Dify node type | Check `docs/nodes/` for the correct type string |
+| "Unknown node type" | A node's `type` string does not match a known Dify node type | Check `skills/dify/references/nodes/` for the correct type string |
 | "Missing required field" | A node is missing a field that Dify requires | Review the error details — it names the node and field |
 | "Dataset not found" | The knowledge base UUID in the YAML does not exist in this workspace | Create the knowledge base or update the UUID |
 | "Plugin not installed" | A plugin node references a plugin not installed in the workspace | Install the plugin from the Dify marketplace |

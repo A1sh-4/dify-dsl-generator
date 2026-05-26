@@ -530,7 +530,7 @@ Use this to pass the agent's final synthesized answer into downstream nodes (ans
 - **High-stakes production flows:** Agent paths are non-deterministic; for compliance-critical flows, use manual chains with explicit error handling
 
 See also:
-- `docs/nodes/agent.md` — agent node field reference
-- `docs/patterns/error-handling.md` — adding fail-branch to agent nodes
-- `docs/patterns/parallel-execution.md` — running multiple agents in parallel
-- `docs/features/plugins-marketplace.md` — finding tools to wire into an agent
+- `skills/dify/references/nodes/agent.md` — agent node field reference
+- `skills/dify/references/patterns/error-handling.md` — adding fail-branch to agent nodes
+- `skills/dify/references/patterns/parallel-execution.md` — running multiple agents in parallel
+- `skills/dify/references/features/plugins-marketplace.md` — finding tools to wire into an agent

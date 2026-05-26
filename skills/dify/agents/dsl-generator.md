@@ -525,7 +525,7 @@ If no plugins are used, omit the `dependencies` block entirely.
 After writing the initial YAML, run:
 
 ```
-python scripts/format_yaml.py --inplace [filename].yml
+.venv/Scripts/python skills/dify/scripts/format_yaml.py --inplace [filename].yml
 ```
 
 This normalizes indentation, field ordering, and whitespace to match Dify's expected format.
@@ -747,7 +747,7 @@ Before presenting output to the user, confirm every item:
 - [ ] The terminal node is `answer` (chatflow) or `end` (workflow)
 
 **Formatting:**
-- [ ] `python scripts/format_yaml.py --inplace [filename].yml` has been run
+- [ ] `.venv/Scripts/python skills/dify/scripts/format_yaml.py --inplace [filename].yml` has been run
 - [ ] The YAML has been written to `output/[project-name]/[project-name].yml` and the path stated clearly
 - [ ] `output/[project-name]/SETUP.md` has been written with all sections filled in (no placeholder text)
 

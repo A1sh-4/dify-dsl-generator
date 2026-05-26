@@ -188,10 +188,10 @@ This creates two output handles: `source` (success path) and `error-handle` (fai
 
 ### Step 7 — Generate node IDs
 
-Run `python scripts/generate_id.py` once for the HTTP node and once for the Code node. Use the returned 13-digit values verbatim. If the node-planner's approved plan already assigned IDs for these nodes, use those IDs from the plan instead.
+Run `.venv/Scripts/python skills/dify/scripts/generate_id.py` once for the HTTP node and once for the Code node. Use the returned 13-digit values verbatim. If the node-planner's approved plan already assigned IDs for these nodes, use those IDs from the plan instead.
 
 ```
-python scripts/generate_id.py
+.venv/Scripts/python skills/dify/scripts/generate_id.py
 ```
 
 ### Step 8 — Write the Code node to parse the response
@@ -434,7 +434,7 @@ Passing to: dsl-generator
 - ALWAYS write a Code node to parse the HTTP response body. The body is always a raw string. Never instruct a downstream node to read `{{#http_node_id.body#}}` as if it were parsed JSON.
 - The Code node's `main` function MUST include try/except error handling. An uncaught exception in the Code node aborts the workflow — always catch `json.JSONDecodeError` and `KeyError` at minimum.
 - Do NOT use `import requests`, `import urllib.request`, `import os`, `import subprocess`, or any other restricted module in the Code node. Only the allowed modules listed in `skills/dify/references/nodes/code.md` are available in the sandbox.
-- Node IDs in the YAML snippets must come from either `python scripts/generate_id.py` output or the node-planner's approved plan. Never hand-craft 13-digit IDs.
+- Node IDs in the YAML snippets must come from either `.venv/Scripts/python skills/dify/scripts/generate_id.py` output or the node-planner's approved plan. Never hand-craft 13-digit IDs.
 - Position values (`x`, `y`) must come from the node-planner's approved plan. If the plan does not specify positions for these nodes, use the positioning algorithm from `skills/dify/references/schema/node-positioning.md`.
 - The edge `sourceHandle` for the fail path is exactly the string `"error-handle"` — not `"fail-branch"`, not `"error"`, not `"failure"`. Getting this wrong breaks the error routing silently.
 - If the API brief contains any `UNKNOWN` fields, do not produce YAML. Block with the prerequisite message and request updated research from api-researcher.

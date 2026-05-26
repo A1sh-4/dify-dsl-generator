@@ -37,7 +37,7 @@ CRITICAL: When executing the /dify skill, Claude MUST always spawn agents in thi
 
 9. **dsl-generator** — always runs. This is the only agent that produces YAML output. It assembles all inputs from previous agents into a complete, valid Dify DSL YAML file following the current schema. It generates unique node IDs, sets correct node positions for the canvas, and structures the file for immediate import.
 
-10. **dsl-validator** — fires automatically via the post-write hook whenever a YAML file is written to the `output/` directory, but is also invoked manually if validation fails or the user requests re-validation. Runs `scripts/validate_workflow.py` and reports any schema errors, missing required fields, or broken node references.
+10. **dsl-validator** — fires automatically via the post-write hook whenever a YAML file is written to the `output/` directory, but is also invoked manually if validation fails or the user requests re-validation. Runs `skills/dify/scripts/validate_workflow.py` and reports any schema errors, missing required fields, or broken node references.
 
 ## Rules
 
@@ -45,16 +45,16 @@ CRITICAL: When executing the /dify skill, Claude MUST always spawn agents in thi
 - ALWAYS show the node plan (produced by node-planner) to the user before generating any YAML, and WAIT for the user to explicitly approve it. The user may request changes, which cause node-planner to revise and re-present the plan.
 - ALWAYS check for Dify marketplace plugins (via plugin-finder) before researching external APIs. Plugins are preferred because they are officially maintained, use standardized auth, and avoid raw HTTP node complexity.
 - NEVER embed API keys, secrets, or credentials in generated YAML. All sensitive values must reference environment variables using the `{{env.VARIABLE_NAME}}` syntax supported by Dify.
-- ALWAYS use the `scripts/generate_id.py` utility when creating node IDs to ensure they conform to the required format and are collision-free.
-- ALWAYS run `scripts/format_yaml.py` on the output before presenting it to the user to ensure consistent indentation and field ordering.
-- ALWAYS run ALL Python scripts using the project virtual environment — never the global Python installation. The venv is at `.venv/` in this directory. Correct invocation: `.venv/Scripts/python scripts/validate_workflow.py [args]`. Never use `python` or `python3` bare commands.
+- ALWAYS use the `skills/dify/scripts/generate_id.py` utility when creating node IDs to ensure they conform to the required format and are collision-free.
+- ALWAYS run `skills/dify/scripts/format_yaml.py` on the output before presenting it to the user to ensure consistent indentation and field ordering.
+- ALWAYS run ALL Python scripts using the project virtual environment — never the global Python installation. The venv is at `.venv/` in this directory. Correct invocation: `.venv/Scripts/python skills/dify/scripts/validate_workflow.py [args]`. Never use `python` or `python3` bare commands.
 
 ## Project Structure
 
-- `skills/dify/` — contains the `/dify` skill entry point (`SKILL.md`), all reference documentation (`references/`), and ground-truth YAML examples (`assets/`). This is the self-contained skill folder that follows the agentskills.io standard.
-- `agents/` — contains 10 specialized agent definition files, one per pipeline step. Each agent has a focused system prompt, tool access list, and output schema.
-- `hooks/` — contains the post-write hook that auto-triggers dsl-validator whenever a YAML file is saved to `output/`. Ensures no invalid DSL is silently produced.
-- `scripts/` — Python utility scripts: `generate_id.py` (UUID generation in Dify node format), `validate_workflow.py` (schema and reference validation), `format_yaml.py` (YAML normalization and formatting). Always run via `.venv/Scripts/python`.
+- `skills/dify/` — contains the `/dify` skill entry point (`SKILL.md`), all reference documentation (`references/`), ground-truth YAML examples (`assets/`), agent definitions (`agents/`), Python utility scripts (`scripts/`), post-write hooks (`hooks/`), and test suite (`tests/`). This is the fully self-contained skill folder that follows the agentskills.io standard.
+- `skills/dify/agents/` — contains 10 specialized agent definition files, one per pipeline step. Each agent has a focused system prompt, tool access list, and output schema.
+- `skills/dify/hooks/` — contains the post-write hook that auto-triggers dsl-validator whenever a YAML file is saved to `output/`. Ensures no invalid DSL is silently produced.
+- `skills/dify/scripts/` — Python utility scripts: `generate_id.py` (UUID generation in Dify node format), `validate_workflow.py` (schema and reference validation), `format_yaml.py` (YAML normalization and formatting). Always run via `.venv/Scripts/python`.
 - `skills/dify/references/` — reference documentation organized by category: node types, LLM configuration, DSL schema, common patterns, and Dify marketplace plugin information. Agents consult these docs during generation.
 - `skills/dify/assets/` — example YAML files and templates organized into `chatflows/`, `workflows/`, and `templates/` subdirectories. These serve as ground-truth examples that dsl-generator uses as structural references.
 - `.venv/` — project-local Python virtual environment. All Python execution must use `.venv/Scripts/python`. Run `python -m venv .venv` to recreate if missing, then `pip install pyyaml pytest` to install dependencies.

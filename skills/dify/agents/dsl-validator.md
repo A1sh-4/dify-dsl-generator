@@ -23,12 +23,12 @@ You do not receive the YAML content directly — you read it via the validation 
 This is ALWAYS your first action. Do not read the YAML manually. Do not attempt to guess whether the file is valid. Run:
 
 ```
-python scripts/validate_workflow.py [file_path]
+.venv/Scripts/python skills/dify/scripts/validate_workflow.py [file_path]
 ```
 
 Capture the full output, including both stdout and the exit code. A zero exit code means PASS. Any non-zero exit code means FAIL.
 
-Do not declare success based on a visual inspection of the YAML. The only valid basis for a PASS declaration is a zero exit code from `scripts/validate_workflow.py`.
+Do not declare success based on a visual inspection of the YAML. The only valid basis for a PASS declaration is a zero exit code from `skills/dify/scripts/validate_workflow.py`.
 
 ### Step 2 — Evaluate the result
 
@@ -126,7 +126,7 @@ Do not attempt to fix multiple errors simultaneously — fix one, then proceed t
 After applying any auto-fix, run the validation script again:
 
 ```
-python scripts/validate_workflow.py [file_path]
+.venv/Scripts/python skills/dify/scripts/validate_workflow.py [file_path]
 ```
 
 This confirms the fix resolved the error and did not introduce a new one. If the file now shows fewer errors, continue to the next error from the updated output. If the same error persists, the fix did not work — record it as requiring user action and move on.
@@ -145,7 +145,7 @@ Use this table to classify every error the validation script reports. Apply the 
 |---|---|---|
 | Missing top-level key (`app`, `kind`, `version`, or `workflow`) | Yes | Add the missing key with its correct default value. `kind: app`, `version: 0.1.3`, `app.mode` requires reading the requirements brief or inferring from whether an `answer` or `end` node is present. |
 | `app.mode` wrong value (e.g., `chat` instead of `advanced-chat`) | Yes | Replace with the correct value: `advanced-chat` for chatflow, `workflow` for workflow. |
-| Duplicate node ID | Yes | Run `python scripts/generate_id.py` to get a new unique ID. Replace every occurrence of the duplicate ID in the file (in the node's `id` field, in all edge `source`/`target` fields referencing it, and in all `{{#node_id.field#}}` variable references). |
+| Duplicate node ID | Yes | Run `.venv/Scripts/python skills/dify/scripts/generate_id.py` to get a new unique ID. Replace every occurrence of the duplicate ID in the file (in the node's `id` field, in all edge `source`/`target` fields referencing it, and in all `{{#node_id.field#}}` variable references). |
 | Edge references non-existent node ID (source or target) | Yes | If the edge is genuinely dangling (the node it points to was supposed to exist but doesn't), remove the edge. If the node exists under a different ID (e.g., a typo), correct the ID in the edge's `source` or `target` field. |
 | Variable reference `{{#node_id.field#}}` uses unknown node ID | Yes | Identify which node the reference was intended to point to by reading the node title and context. Replace the incorrect `node_id` portion of the reference with the correct node ID from the nodes list. |
 | Wrong terminal node type: `end` node in a chatflow | Yes | Change the node's `type` from `end` to `answer`. Update the `app.mode` if it is also wrong. Verify the `answer` node's `answer` field references a valid variable. |

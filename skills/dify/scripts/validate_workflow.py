@@ -1,10 +1,10 @@
 """
 validate_workflow.py — Validate a Dify DSL workflow YAML file.
 
-Based on ground-truth analysis of 12 real Dify exports (reference_dsls/).
+Based on ground-truth analysis of 12 real Dify exports (skills/dify/assets/).
 
 Usage:
-    python scripts/validate_workflow.py <path/to/workflow.yaml> [--verbose]
+    .venv/Scripts/python skills/dify/scripts/validate_workflow.py <path/to/workflow.yaml> [--verbose]
 
 Exit codes:
     0  All checks passed.

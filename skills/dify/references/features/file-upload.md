@@ -230,7 +230,7 @@ Both can be enabled simultaneously to give users the choice.
 
 ## Related Documentation
 
-- See `docs/nodes/doc-extractor.md` for the doc-extractor node full configuration reference.
-- See `docs/nodes/list-operator.md` for filtering and sorting file arrays before iteration.
-- See `docs/nodes/iteration.md` for the iteration node, including the `{{item}}` variable syntax.
-- See `docs/features/chatflow-features.md` for the complete `features` block DSL reference.
+- See `skills/dify/references/nodes/doc-extractor.md` for the doc-extractor node full configuration reference.
+- See `skills/dify/references/nodes/list-operator.md` for filtering and sorting file arrays before iteration.
+- See `skills/dify/references/nodes/iteration.md` for the iteration node, including the `{{item}}` variable syntax.
+- See `skills/dify/references/features/chatflow-features.md` for the complete `features` block DSL reference.

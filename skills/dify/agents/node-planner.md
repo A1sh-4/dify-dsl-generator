@@ -50,13 +50,14 @@ Write out every micro-step the application must perform, in order, as a numbered
 
 For each micro-step write three lines:
 
-```
+```text
 N. [Action verb] [what is being acted on]
    Input:  [what data enters this step]
    Output: [what data or decision this step produces]
 ```
 
 **What counts as one micro-step:**
+
 - Receive and validate a user input
 - Retrieve documents from a knowledge base
 - Call one external API endpoint
@@ -70,16 +71,100 @@ N. [Action verb] [what is being acted on]
 - Stream or return the result to the user
 
 **Splitting rules — split a step if it:**
+
 - Performs two independent actions (e.g., "fetch data AND summarize it" → two steps)
 - Makes a decision and also generates content (e.g., "classify intent AND draft reply" → two steps)
 - Calls two different endpoints, even to the same service (one step per endpoint)
 - Produces two logically distinct outputs that flow to different downstream steps
 
 **Combining rules — keep as one step if:**
+
 - The action is genuinely atomic (a single SQL query, a single HTTP call, a single classification)
 - Separating it would produce a node that does nothing meaningful on its own
 
-Once the micro-step list is complete, map each step to one Dify node type (see Step 2). Include the micro-step list verbatim in the plan output so the user can see the decomposition logic before the node list.
+Once the micro-step list is complete, mark parallel groups (see Step 1c), then map each step to one Dify node type (see Step 2). Include the micro-step list verbatim in the plan output so the user can see the decomposition logic before the node list.
+
+### Step 1c — Parallelism analysis
+
+**Do this immediately after Step 1b, before selecting any nodes.**
+
+Scan the micro-step list for **parallel-eligible groups** — sets of two or more steps where:
+
+1. Every step in the group reads from exactly the same upstream output (same node, same variable)
+2. No step in the group depends on another step in the same group
+3. Each step produces a distinct named output (not the same variable)
+
+Mark every step that belongs to a parallel-eligible group with `[P: GroupName]` in the micro-step list. Example:
+
+```text
+2a. [P: EXTRACT] Extract action items from notes
+    Input:  meeting_notes (start node)
+    Output: action_items list
+
+2b. [P: EXTRACT] Extract key decisions from notes
+    Input:  meeting_notes (start node)
+    Output: decisions list
+
+2c. [P: EXTRACT] Extract flagged risks from notes
+    Input:  meeting_notes (start node)
+    Output: risks list
+```
+
+**The single most important rule:** If ≥2 micro-steps all read from the same source and produce independent outputs, they MUST be designed as parallel fan-out branches — never as a sequential chain. Sequencing independent extractions or analyses multiplies latency needlessly.
+
+**Common parallel patterns to always catch:**
+
+| User description | Parallel group to create |
+| --- | --- |
+| "extract A, B, C, D from the same document/notes" | One LLM branch per section |
+| "analyze sentiment, topics, and entities from the same text" | One LLM branch per analysis dimension |
+| "translate into French, German, and Spanish" | One LLM branch per language |
+| "check spelling, grammar, and tone separately" | One LLM branch per quality dimension |
+| "search two or more independent APIs" | One tool/HTTP node per API |
+| "summarize and classify the same input" | One LLM for summary, one for classification |
+
+**Check the `PRELIMINARY FLOW SKETCH` in the requirements brief.** If it contains a `[PARALLEL GROUP]` block, confirm each of those groups is reflected with `[P: GroupName]` markers in your micro-step list. If the brief has no parallel groups but you identify one, mark it yourself.
+
+**Also detect serial synthesizer steps.** After marking parallel groups, scan every remaining step for steps that take outputs from **two or more branches of the same parallel group** as inputs. These steps cannot run in parallel — they genuinely depend on the outputs of multiple parallel branches, so they must run after the parallel group completes.
+
+Mark synthesizer steps with `[S: GroupName]` in the micro-step list, where `GroupName` matches the parallel group they synthesize. Example:
+
+```text
+2a. [P: EXTRACT] Extract action items from meeting notes
+    Input:  meeting_notes (start node)
+    Output: action_items list
+
+2b. [P: EXTRACT] Extract key decisions from meeting notes
+    Input:  meeting_notes (start node)
+    Output: decisions list
+
+2c. [P: EXTRACT] Extract flagged risks from meeting notes
+    Input:  meeting_notes (start node)
+    Output: risks list
+
+3.  [S: EXTRACT] Generate next steps informed by action items, decisions, and risks
+    Input:  action_items (step 2a), decisions (step 2b), risks (step 2c)
+    Output: next_steps list
+```
+
+This produces a **parallel-then-synthesize** topology:
+
+```text
+start ──┬── llm (Action Items) ──┐
+        ├── llm (Decisions)    ──┤
+        └── llm (Risks)        ──┘
+                                  └── llm (Next Steps) → template-transform → answer
+```
+
+The synthesizer node wires to all three parallel branches. Dify automatically waits for all of them before executing the synthesizer — no `variable-aggregator` is needed. The synthesizer LLM's system prompt must explicitly reference all N parallel outputs so the model can draw on each one.
+
+**Detection rule:** A step is a synthesizer `[S: GroupName]` if its `Input:` line references the outputs of ≥2 members of the same parallel group AND none of its own outputs are consumed by other members of that parallel group.
+
+**Synthesizer positioning:** Place the synthesizer node at y=282 (back on the main axis), at x = parallel_branch_x + 300 — the same column spacing used for the convergence node in a pure parallel fan-in.
+
+**Read `skills/dify/references/patterns/parallel-execution.md`** before proceeding to Step 2 — specifically the convergence strategy section, which explains when a `variable-aggregator` is needed vs. when `template-transform` alone is the convergence point.
+
+---
 
 ### Step 2 — Select the node set
 
@@ -120,6 +205,8 @@ If that sentence requires "and" in the verb or "and" in the input source, split 
 | LLM that reformats JSON or does string math | `llm` replaced by `code` node |
 | One `http-request` calling two endpoints | Two `http-request` nodes |
 | One `llm` summarizing two different source documents | Two `llm` nodes, one per source |
+| **One `llm` extracting multiple independent sections from one input** | **Parallel fan-out: one focused `llm` branch per section, all reading from the same source** |
+| Multiple sequential `llm` nodes all reading from the same input with no dependency between them | Redesign as parallel fan-out branches converging at `template-transform` |
 
 **Node type selection guide — choose the most specific type available:**
 
@@ -282,12 +369,12 @@ Put the final opener HTML in the plan under `CONVERSATION SETUP`, along with 2�
 Run the following command to generate a unique ID for each node:
 
 ```
-python scripts/generate_id.py
+.venv/Scripts/python skills/dify/scripts/generate_id.py
 ```
 
 Run it once per node. Each call returns a unique 13-digit millisecond timestamp string. Use the returned value verbatim as the node's `id`. Never reuse IDs. Never hand-craft IDs.
 
-If `scripts/generate_id.py` is unavailable, use incrementing 13-digit timestamps starting from `1700000000000`, incrementing by 100 per node (e.g., `1700000000000`, `1700000000100`, `1700000000200`).
+If `skills/dify/scripts/generate_id.py` is unavailable, use incrementing 13-digit timestamps starting from `1700000000000`, incrementing by 100 per node (e.g., `1700000000000`, `1700000000100`, `1700000000200`).
 
 ### Step 4 — Calculate node positions
 
@@ -308,6 +395,24 @@ Use this positioning algorithm precisely:
 **After branch convergence:**
 - The `variable-aggregator` node (or whichever node the branches merge into) returns to y=282
 - Continue the chain from there
+
+**Parallel fan-out / fan-in:**
+
+The source node (before the fan-out) and the convergence node (after all branches) stay on the main y=282 line. The parallel branch nodes are distributed vertically around y=282. Use this lookup table for y values — the spacing gives enough canvas room for each node's card:
+
+| Branches (N) | y values for branch nodes |
+| --- | --- |
+| 2 | 97, 467 |
+| 3 | 97, 282, 467 |
+| 4 | 80, 260, 440, 620 |
+| 5 | 80, 230, 380, 530, 680 |
+
+The x increment is the same as the linear chain (+300 per column). Example for 4 parallel branches:
+
+- Source node: x=80, y=282
+- Branch nodes: x=380, y=80 / 260 / 440 / 620
+- Convergence node (template-transform or variable-aggregator): x=680, y=282
+- Next node: x=980, y=282
 
 **Iteration:**
 - The `iteration` container node is at the current linear position
@@ -368,6 +473,8 @@ Before presenting the plan to the user, verify:
 9. Every node has exactly one responsibility — scan each node's Purpose line and confirm it contains no "and" that combines two distinct actions
 10. No `llm` node performs a task that a more specific node type handles (extraction → `parameter-extractor`, routing → `question-classifier`, transformation → `code`, branching → `if-else`)
 11. The micro-step count matches the node count (start and answer/end included) — if they differ, a step was missed or two steps were incorrectly merged
+12. **Parallelism check:** Are there ≥2 sequential `llm` (or other) nodes that ALL read from the same upstream output and have NO dependency between them? If yes, they must be redesigned as parallel branches — fix this before presenting the plan.
+13. **Convergence strategy check:** For each parallel group, confirm the convergence node is correct: use `variable-aggregator` only when branches produce the same data type to be merged into a single combined value; use `template-transform` directly (no aggregator) when each branch produces a distinct named output that the template renders as a separate section.
 
 If any check fails, fix it before presenting the plan.
 
@@ -398,6 +505,19 @@ MICRO-STEP DECOMPOSITION:
      Node:   [node type chosen for this step]
 
   ... (one entry per micro-step, in execution order)
+  (Mark parallel-eligible steps with [P: GroupName] as shown in Step 1c)
+
+PARALLELISM ANALYSIS:
+  Parallel groups identified: [N groups, or "none"]
+
+  Group [Name]: [short description of what this group does]
+    - Members: [list the micro-step IDs in this group, e.g., "2a, 2b, 2c, 2d"]
+    - All read from: [node_id].[field] (the shared upstream source)
+    - Convergence strategy: [variable-aggregator | template-transform directly | synthesizer LLM]
+    - Reason: [one sentence — why this convergence strategy was chosen]
+    - Synthesizers: [list any [S: GroupName] steps that run after this group, or "none"]
+
+  (Repeat for each parallel group; omit this block entirely if no parallel groups exist)
 
 NODES:
   Node 1: [node_id] | type: start | "Start" | position: (80, 282)
@@ -470,7 +590,7 @@ If the user requests changes to the plan:
 1. Acknowledge the requested change clearly
 2. Revise the node list, edges, and/or variable flow to reflect the change
 3. Recalculate positions if nodes were added, removed, or reordered
-4. Re-run `python scripts/generate_id.py` for any new nodes
+4. Re-run `.venv/Scripts/python skills/dify/scripts/generate_id.py` for any new nodes
 5. Re-verify graph completeness (Step 7)
 6. Present the revised plan in the same format
 7. Wait for approval again
@@ -489,7 +609,7 @@ Repeat this cycle until the user approves. Do not proceed without approval.
 - ONE NODE = ONE FUNCTION — every node must have a single responsibility. If you can describe a node's job using "and", it must be split into two nodes. No exceptions.
 - NEVER use an `llm` node for a task that a more specific node type handles: use `parameter-extractor` for field extraction, `question-classifier` for routing, `code` for data transformation, `if-else` for branching on values, `knowledge-retrieval` for KB lookups
 - Use ONLY valid Dify node type strings from this list: `start`, `llm`, `answer`, `end`, `if-else`, `code`, `http-request`, `knowledge-retrieval`, `tool`, `parameter-extractor`, `question-classifier`, `variable-aggregator`, `variable-assigner`, `iteration`, `template-transform`, `doc-extractor`, `list-operator`, `human-input`
-- Every node ID must be a 13-digit string produced by `python scripts/generate_id.py`
+- Every node ID must be a 13-digit string produced by `.venv/Scripts/python skills/dify/scripts/generate_id.py`
 - The start node must always be at position x=80, y=282
 - Chatflows must end with an `answer` node — never `end`
 - Workflows must end with an `end` node — never `answer`

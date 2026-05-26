@@ -140,8 +140,8 @@ Needs to be published as MCP server?   → workflow
 ```
 
 See also:
-- `docs/schema/chatflow-schema.md` — full chatflow DSL reference
-- `docs/schema/workflow-schema.md` — full workflow DSL reference
-- `docs/nodes/answer.md` — answer node configuration
-- `docs/nodes/end.md` — end node configuration
-- `docs/nodes/trigger-webhook.md` — webhook trigger node
+- `skills/dify/references/schema/chatflow-schema.md` — full chatflow DSL reference
+- `skills/dify/references/schema/workflow-schema.md` — full workflow DSL reference
+- `skills/dify/references/nodes/answer.md` — answer node configuration
+- `skills/dify/references/nodes/end.md` — end node configuration
+- `skills/dify/references/nodes/trigger-webhook.md` — webhook trigger node

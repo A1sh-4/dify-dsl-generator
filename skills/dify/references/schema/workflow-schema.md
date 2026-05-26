@@ -141,7 +141,7 @@ All nodes share this outer envelope regardless of their type. The `data` object 
     selected: false              # Editor UI state — always false in saved DSL
     title: 'Node Title'          # Display name shown on the node card in the editor
     type: start                  # Node type string — determines what fields appear in data
-    # ... additional type-specific fields follow here (see node-type docs in docs/nodes/)
+    # ... additional type-specific fields follow here (see node-type docs in skills/dify/references/nodes/)
 
   height: 54                     # Canvas height in pixels — set by Dify editor, not functional
   id: '1732007415808'            # Unique node identifier — use millisecond Unix timestamp as string

@@ -6,9 +6,9 @@
       "WebFetch(domain:raw.githubusercontent.com)",
       "WebFetch(domain:github.com)",
       "WebSearch",
-      "Bash(python scripts/validate_workflow.py *)",
-      "Bash(python scripts/generate_id.py)",
-      "Bash(python scripts/format_yaml.py *)"
+      "Bash(.venv/Scripts/python skills/dify/scripts/validate_workflow.py *)",
+      "Bash(.venv/Scripts/python skills/dify/scripts/generate_id.py)",
+      "Bash(.venv/Scripts/python skills/dify/scripts/format_yaml.py *)"
     ]
   }
 }

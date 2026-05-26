@@ -187,5 +187,5 @@ This creates a voice-in, voice-out experience in the web app. Users can interact
 
 ## Related Documentation
 
-- See `docs/features/chatflow-features.md` for the complete `features` block reference.
-- See `docs/schema/chatflow-schema.md` for the full DSL structure including the `features` block position.
+- See `skills/dify/references/features/chatflow-features.md` for the complete `features` block reference.
+- See `skills/dify/references/schema/chatflow-schema.md` for the full DSL structure including the `features` block position.

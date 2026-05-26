@@ -6,7 +6,7 @@
 #   2. mode must be "advanced-chat" for chatflows — do not change.
 #   3. Terminal node must be "answer" (not "end") for chatflows.
 #   4. The template-transform node (Node 3) renders final HTML output — customize the template.
-#   5. Run: .venv/Scripts/python scripts/validate_workflow.py assets/templates/starter-chatflow.yml
+#   5. Run: .venv/Scripts/.venv/Scripts/python skills/dify/scripts/validate_workflow.py skills/dify/assets/templates/starter-chatflow.yml
 # =============================================================================
 app:
   description: "# TODO: One sentence describing what this chatflow does."
@@ -176,7 +176,7 @@ workflow:
           type: start
           variables: []             # TODO: Add extra input variables if needed (e.g. language selector, file upload)
         height: 54
-        id: "1718010000001"         # TODO: Replace with output of: .venv/Scripts/python scripts/generate_id.py
+        id: "1718010000001"         # TODO: Replace with output of: .venv/Scripts/.venv/Scripts/python skills/dify/scripts/generate_id.py
         position:
           x: 80
           y: 282
@@ -211,8 +211,8 @@ workflow:
             completion_params:
               temperature: 0.7      # TODO: Lower (0.1-0.3) for factual/extraction tasks; higher (0.8-1.2) for creative
             mode: chat
-            name: claude-sonnet-4-6  # TODO: Replace with desired model if needed
-            provider: anthropic
+            name: Claude-4-Sonnet
+            provider: langgenius/openai_api_compatible/openai_api_compatible
           prompt_template:
             - edition_type: basic
               id: "00000000-0000-0000-0000-000000000001"  # TODO: Replace with a real UUIDv4
@@ -238,7 +238,7 @@ workflow:
           vision:
             enabled: false          # TODO: Set true if accepting image inputs (also enable file_upload above)
         height: 98
-        id: "1718010000002"         # TODO: Replace with output of: .venv/Scripts/python scripts/generate_id.py
+        id: "1718010000002"         # TODO: Replace with output of: .venv/Scripts/.venv/Scripts/python skills/dify/scripts/generate_id.py
         position:
           x: 380
           y: 282
@@ -274,7 +274,7 @@ workflow:
                 - text
               variable: llm_output  # TODO: Must match the {{ llm_output }} reference in the template above
         height: 54
-        id: "1718010000003"         # TODO: Replace with output of: .venv/Scripts/python scripts/generate_id.py
+        id: "1718010000003"         # TODO: Replace with output of: .venv/Scripts/.venv/Scripts/python skills/dify/scripts/generate_id.py
         position:
           x: 680
           y: 282
@@ -301,7 +301,7 @@ workflow:
           type: answer              # REQUIRED for chatflows — do not change to "end"
           variables: []
         height: 107
-        id: "1718010000004"         # TODO: Replace with output of: .venv/Scripts/python scripts/generate_id.py
+        id: "1718010000004"         # TODO: Replace with output of: .venv/Scripts/.venv/Scripts/python skills/dify/scripts/generate_id.py
         position:
           x: 980
           y: 282

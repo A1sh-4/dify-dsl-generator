@@ -139,28 +139,17 @@ dify-dsl-generator/
 │       │   ├── features/        # Plugins, tools, knowledge bases
 │       │   ├── api/             # Dify API reference
 │       │   └── setup/           # Setup and installation guides
-│       └── assets/              # Ground-truth YAML examples
-│           ├── chatflows/       # Example chatflow YAML files
-│           ├── workflows/       # Example workflow YAML files
-│           └── templates/       # Minimal starter templates
-├── agents/
-│   ├── requirements-analyzer.md
-│   ├── plugin-finder.md
-│   ├── api-researcher.md
-│   ├── integration-builder.md
-│   ├── knowledge-architect.md
-│   ├── node-planner.md
-│   ├── prompt-engineer.md
-│   ├── error-strategy.md
-│   ├── dsl-generator.md
-│   └── dsl-validator.md
-├── hooks/
-│   └── post-write-validate.sh   # Auto-validation hook
-├── scripts/
-│   ├── generate_id.py           # Node ID generation
-│   ├── validate_workflow.py     # Schema validation
-│   └── format_yaml.py           # YAML normalization
-├── tests/                       # Pytest suite (91 tests)
+│       ├── assets/              # Ground-truth YAML examples
+│       │   ├── chatflows/       # Example chatflow YAML files
+│       │   ├── workflows/       # Example workflow YAML files
+│       │   └── templates/       # Minimal starter templates
+│       ├── agents/              # Specialized agent definitions (11 files)
+│       ├── scripts/             # Python utility scripts
+│       │   ├── generate_id.py   # Node ID generation
+│       │   ├── validate_workflow.py  # Schema validation
+│       │   └── format_yaml.py   # YAML normalization
+│       ├── hooks/               # Post-write validation hook
+│       └── tests/               # Pytest suite (91 tests)
 ├── settings.json                # Plugin permissions
 ├── CLAUDE.md                    # Agent instructions and rules
 ├── LICENSE                      # MIT
@@ -174,7 +163,7 @@ dify-dsl-generator/
 
 - **Claude Code** — version 1.0 or later, with plugin support enabled
 - **Dify instance** — self-hosted or Dify Cloud account for importing and running the generated YAML files
-- **Python 3.8+** — required for the validation and utility scripts (`scripts/`)
+- **Python 3.8+** — required for the validation and utility scripts (`skills/dify/scripts/`)
 - **Internet access** — the plugin fetches current documentation from docs.dify.ai when needed and searches the Dify marketplace for plugins
 
 ---

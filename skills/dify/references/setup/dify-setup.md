@@ -114,13 +114,13 @@ Regardless of Cloud or self-hosted, complete these steps before importing any DS
 
 Dify requires at least one LLM provider to execute any workflow or chatflow. Without this, all workflow runs will fail immediately.
 
-Go to **Settings → Model Provider → Add provider**. Add at minimum one text generation model (e.g., Anthropic Claude or OpenAI GPT-4o). See `docs/setup/model-configuration.md` for detailed provider setup instructions.
+Go to **Settings → Model Provider → Add provider**. Add at minimum one text generation model (e.g., Anthropic Claude or OpenAI GPT-4o). See `skills/dify/references/setup/model-configuration.md` for detailed provider setup instructions.
 
 ### 2. Create a Knowledge Base (RAG workflows only)
 
 If your workflow includes a knowledge retrieval node, you need at least one knowledge base with indexed documents before the workflow can run.
 
-Go to **Knowledge → Create Knowledge Base**. Upload at least one document and wait for indexing to complete (status changes from "Indexing" to "Available"). See `docs/setup/knowledge-base-setup.md` for full details.
+Go to **Knowledge → Create Knowledge Base**. Upload at least one document and wait for indexing to complete (status changes from "Indexing" to "Available"). See `skills/dify/references/setup/knowledge-base-setup.md` for full details.
 
 ### 3. Install Marketplace Plugins (if your workflow uses plugin nodes)
 

@@ -219,5 +219,5 @@ export default {
 
 ## Related Documentation
 
-- See `docs/nodes/http.md` for HTTP nodes (in-graph API calls, as opposed to workspace-level extensions).
-- See `docs/features/plugins-marketplace.md` for marketplace plugins (preferred over HTTP nodes and extensions when available).
+- See `skills/dify/references/nodes/http.md` for HTTP nodes (in-graph API calls, as opposed to workspace-level extensions).
+- See `skills/dify/references/features/plugins-marketplace.md` for marketplace plugins (preferred over HTTP nodes and extensions when available).

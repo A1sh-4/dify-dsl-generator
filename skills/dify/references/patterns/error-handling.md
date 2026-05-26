@@ -520,7 +520,7 @@ retry_config:
 This means: try 3 times total (initial attempt + 2 retries), then go to fail-branch if all attempts fail.
 
 See also:
-- `docs/nodes/http-request.md` — full HTTP node field reference
-- `docs/nodes/variable-aggregator.md` — how to configure the merge node
-- `docs/patterns/parallel-execution.md` — combining error handling with parallel flows
-- `docs/schema/edge-types.md` — edge sourceHandle values for each branch type
+- `skills/dify/references/nodes/http-request.md` — full HTTP node field reference
+- `skills/dify/references/nodes/variable-aggregator.md` — how to configure the merge node
+- `skills/dify/references/patterns/parallel-execution.md` — combining error handling with parallel flows
+- `skills/dify/references/schema/edge-types.md` — edge sourceHandle values for each branch type

@@ -11,7 +11,7 @@ Before installing, make sure you have the following:
   npm install -g @anthropic-ai/claude-code
   ```
   Alternatively, use the Claude Code desktop app which includes the CLI.
-- **Access to a Dify instance** — either Dify Cloud (app.dify.ai) or a self-hosted Dify deployment. See `docs/setup/dify-setup.md` for instructions on getting Dify running.
+- **Access to a Dify instance** — either Dify Cloud (app.dify.ai) or a self-hosted Dify deployment. See `skills/dify/references/setup/dify-setup.md` for instructions on getting Dify running.
 - **Python 3.8 or later** — required to run the validation and utility scripts in the `scripts/` directory. Verify your Python version with:
   ```bash
   python --version

@@ -136,6 +136,47 @@ Based on everything above, recommend the sequence of node types needed. Use the 
 
 For each recommended node type, give a one-line reason why it is needed.
 
+### Step 10b — Sketch the preliminary flow
+
+After recommending node types, produce a plain-English flow sketch that shows every step the application must perform — in execution order — and explicitly marks any steps that can run in parallel.
+
+**A group of steps is parallel-eligible when ALL of the following are true:**
+
+1. Every step in the group reads from the same upstream data source (same input variable or same node's output)
+2. No step in the group requires output from any other step in the same group
+3. There are at least 2 such steps in the group
+
+**Mark parallel groups clearly.** Use `[PARALLEL GROUP]` as a label. Steps in the group all read from the same source and execute simultaneously; the next step runs only after all of them finish.
+
+**The most important pattern to detect — multi-section analysis from one input:**
+Whenever the user's description says "extract X, Y, Z from the same document/text/input", those extractions are ALWAYS parallel. Examples that trigger this:
+
+- "action items, decisions, risks, and next steps from meeting notes" → 4 parallel extraction steps
+- "sentiment, topics, and named entities from a review" → 3 parallel analysis steps
+- "summary, key quotes, and recommended follow-ups from a transcript" → 3 parallel extraction steps
+- "translate into French, German, and Spanish" → 3 parallel translation steps
+
+Use this format for the sketch:
+
+```text
+Step 1: [brief action verb + what] — [node type]
+[PARALLEL GROUP — all read from Step 1's output, execute simultaneously]:
+  Step 2a: [action for branch A] — [node type]
+  Step 2b: [action for branch B] — [node type]
+  Step 2c: [action for branch C] — [node type]
+  (add more branches as needed)
+[SYNTHESIZER — reads outputs from ALL branches above, runs after all complete]:
+  Step 3: [action that synthesizes/combines all parallel outputs] — [node type]
+Step 4: [action that waits for step 3, then renders] — [node type]
+Step 5: [terminal action] — [node type]
+```
+
+Use `[SYNTHESIZER]` only when a step genuinely depends on outputs from two or more parallel branches — for example, "generate next steps given what was decided AND what risks were flagged." A step that only reads from one branch's output is NOT a synthesizer; it is a continuation of that branch or a convergence point. If the flow has no synthesizer step (all parallel outputs go directly to template-transform), omit the `[SYNTHESIZER]` block.
+
+If the flow is entirely sequential with no parallel groups, use simple sequential numbering without any `[PARALLEL GROUP]` or `[SYNTHESIZER]` label.
+
+**Why this matters:** The node-planner uses this sketch as its primary input for graph design. An accurate parallel sketch means the planner designs the right fan-out / fan-in architecture from the start, instead of defaulting to a slow sequential chain.
+
 ---
 
 ## Clarifying Question Rules
@@ -166,7 +207,7 @@ If you must ask a question, ask it and STOP. Do not produce the requirements bri
 
 When you have enough information to proceed, output EXACTLY the following structure. Do not add commentary before or after it. Do not include explanations outside the block. The downstream agents parse this format.
 
-```
+```text
 === REQUIREMENTS BRIEF ===
 App type: [chatflow | workflow]
 App name: [suggested name, 2-5 words, title case]
@@ -201,6 +242,16 @@ RECOMMENDED NODE TYPES (in order):
 1. [node_type] — [one-line reason why this node is needed]
 2. [node_type] — [one-line reason]
 ...
+
+PRELIMINARY FLOW SKETCH:
+  Step 1: [brief action] — [node type]
+  [PARALLEL GROUP — all read from Step 1's output, execute simultaneously]:
+    Step 2a: [branch A action] — [node type]
+    Step 2b: [branch B action] — [node type]
+    Step 2c: [branch C action] — [node type]
+  Step 3: [waits for all parallel steps, then renders] — [node type]
+  Step 4: [terminal action] — [node type]
+  (Omit the [PARALLEL GROUP] block entirely if the flow is fully sequential)
 
 AMBIGUITIES REMAINING: [list any unresolved questions, or write "none"]
 === END BRIEF ===

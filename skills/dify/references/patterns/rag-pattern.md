@@ -589,6 +589,6 @@ The `result` output of the `knowledge-retrieval` node is a formatted string that
 This formatted string is what gets substituted into `{{#node_id.result#}}` in the LLM prompt.
 
 See also:
-- `docs/nodes/knowledge-retrieval.md` — full node reference
-- `docs/config/llm-settings.md` — LLM model configuration
-- `docs/patterns/agentic-pattern.md` — when to use agent-based RAG instead
+- `skills/dify/references/nodes/knowledge-retrieval.md` — full node reference
+- `skills/dify/references/config/llm-settings.md` — LLM model configuration
+- `skills/dify/references/patterns/agentic-pattern.md` — when to use agent-based RAG instead

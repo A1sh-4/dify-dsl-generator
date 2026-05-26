@@ -176,7 +176,7 @@ sensitive_word_avoidance:
 - Input check: if user input contains a sensitive word, Dify returns a configurable rejection message without running the workflow.
 - Output check: if the LLM's output contains a sensitive word, it is replaced with `***` or a custom replacement string.
 
-For more sophisticated moderation (regex patterns, ML classifiers, custom logic), use an API Extension moderation endpoint instead. See `docs/features/api-extensions.md`.
+For more sophisticated moderation (regex patterns, ML classifiers, custom logic), use an API Extension moderation endpoint instead. See `skills/dify/references/features/api-extensions.md`.
 
 ---
 
@@ -191,7 +191,7 @@ speech_to_text:
   enabled: false
 ```
 
-See `docs/features/speech.md` for full details on STT model selection, language support, and limitations.
+See `skills/dify/references/features/speech.md` for full details on STT model selection, language support, and limitations.
 
 **Chatflow-only.** Web app interface only. API mode does not support STT.
 
@@ -221,7 +221,7 @@ text_to_speech:
 - `language` — BCP-47 language code (e.g., `"en-US"`, `"zh-CN"`, `"ja-JP"`). Controls pronunciation and language model selection.
 - `voice` — voice identifier specific to the TTS model. For OpenAI TTS: `alloy`, `echo`, `fable`, `onyx`, `nova`, `shimmer`.
 
-See `docs/features/speech.md` for full details on TTS model selection and voice options.
+See `skills/dify/references/features/speech.md` for full details on TTS model selection and voice options.
 
 **Chatflow-only.** Web app interface only.
 
@@ -243,7 +243,7 @@ file_upload:
       - remote_url
 ```
 
-See `docs/features/file-upload.md` for the complete file upload reference including supported types, size limits, and how to reference uploaded files in the workflow graph.
+See `skills/dify/references/features/file-upload.md` for the complete file upload reference including supported types, size limits, and how to reference uploaded files in the workflow graph.
 
 ---
 
@@ -358,7 +358,7 @@ features:
 
 ## Related Documentation
 
-- See `docs/features/speech.md` for STT/TTS model configuration.
-- See `docs/features/file-upload.md` for file upload node patterns.
-- See `docs/schema/chatflow-schema.md` for the complete chatflow DSL structure.
-- See `docs/features/knowledge-base.md` for setting up the retrieval that `retriever_resource` cites.
+- See `skills/dify/references/features/speech.md` for STT/TTS model configuration.
+- See `skills/dify/references/features/file-upload.md` for file upload node patterns.
+- See `skills/dify/references/schema/chatflow-schema.md` for the complete chatflow DSL structure.
+- See `skills/dify/references/features/knowledge-base.md` for setting up the retrieval that `retriever_resource` cites.

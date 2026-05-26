@@ -4,7 +4,7 @@
 # Instructions:
 #   1. Replace every "# TODO:" comment with your actual values.
 #   2. Rename node IDs if you add more nodes (keep them unique strings).
-#   3. Run: python scripts/validate_workflow.py assets/templates/starter-workflow.yml
+#   3. Run: .venv/Scripts/python skills/dify/scripts/validate_workflow.py skills/dify/assets/templates/starter-workflow.yml
 # =============================================================================
 app:
   description: "# TODO: Replace with a description of what your workflow does."
@@ -149,8 +149,8 @@ workflow:
             completion_params:
               temperature: 0.7       # TODO: Lower for factual tasks, higher for creative
             mode: chat
-            name: claude-sonnet-4-6  # TODO: Replace with desired model
-            provider: anthropic      # TODO: Replace with your provider
+            name: Claude-4-Sonnet
+            provider: langgenius/openai_api_compatible/openai_api_compatible
           prompt_template:
             - edition_type: basic
               id: "00000000-0000-0000-0000-000000000001"  # TODO: Replace with a real UUIDv4

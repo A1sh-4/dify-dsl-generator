@@ -41,6 +41,7 @@ data:
 ```
 
 **Use parallel iteration when:**
+
 - Processing a list of files, URLs, or records with the same pipeline
 - Running LLM calls over multiple items (e.g., translate 20 product descriptions)
 - Making batch API requests where each item is independent
@@ -53,17 +54,22 @@ data:
 
 This is the primary pattern for parallelism in Dify:
 
-```
+```text
          ┌── Node A (branch 1) ──┐
-Source ──┤                       ├── Variable Aggregator ── Downstream
+Source ──┤                       ├── Convergence Node ── Downstream
          └── Node B (branch 2) ──┘
 ```
 
 **Fan-out:** A single source node has multiple outgoing edges, each targeting a different node. Both target nodes start executing simultaneously as soon as the source completes.
 
-**Fan-in:** A `variable-aggregator` node collects the outputs from all parallel branches. It waits for ALL branches to complete before producing its output. This is the synchronization point.
+**Fan-in (convergence):** Any node with multiple incoming edges automatically waits for ALL of those upstream nodes to complete before executing. This is Dify's built-in synchronization — no special configuration is required. The convergence node choice depends on what the branches produce:
 
-**Key rule:** Every fan-out must have a matching fan-in (`variable-aggregator`). Without it, the graph is invalid — downstream nodes cannot know when all parallel branches have completed.
+| Branches produce | Convergence node | Why |
+| --- | --- | --- |
+| The **same type of data** to be merged into one combined value (e.g., two search results concatenated into one string) | `variable-aggregator` | Merges multiple values of the same type into a single output variable |
+| **Different named outputs**, each rendered as its own section (e.g., action items, decisions, risks from parallel LLM extractions) | `template-transform` directly (no aggregator) | The template already binds each branch output as a separate named variable — no merging needed |
+
+**The most common mistake:** inserting a `variable-aggregator` between focused parallel LLM nodes and a `template-transform`. When each LLM produces a distinct output (action_items, decisions, risks), the template-transform binds them as separate named variables and renders each independently. A variable-aggregator would try to merge them into one value, which is wrong and wasteful.
 
 ---
 
@@ -71,7 +77,7 @@ Source ──┤                       ├── Variable Aggregator ── Down
 
 ### Node Graph
 
-```
+```text
 start ──┬── brave_search (Tool) ──┐
         │                         ├── variable-aggregator ── llm ── end
         └── jina_reader  (Tool) ──┘
@@ -419,8 +425,100 @@ Both fan-out edges from `start` use `sourceHandle: source`. This is correct — 
   ...
 ```
 
+---
+
+## Pattern: Parallel Multi-Section Extraction (No Variable-Aggregator)
+
+This is the most common real-world parallel pattern and the one most often implemented incorrectly as a single sequential LLM.
+
+**Use case:** The user wants to extract or analyze multiple independent sections from one input document — meeting notes, a customer review, a research paper, a support ticket. Each section (action items, decisions, risks, sentiment, topics, etc.) is logically independent of the others. They all read from the same source and none depends on another's output.
+
+**Wrong design (slow, serial):**
+
+```text
+start → llm (extracts everything in one prompt) → template-transform → answer
+```
+
+This forces the LLM to do all work in one call, produces a larger, harder-to-control prompt, and takes as long as all the work combined.
+
+**Correct design (fast, parallel):**
+
+```text
+start ──┬── llm (section A) ──┐
+        ├── llm (section B) ──┤
+        ├── llm (section C) ──┼── template-transform → answer
+        └── llm (section D) ──┘
+```
+
+All four LLMs run simultaneously. The template-transform waits for all four, then renders the combined dashboard. No `variable-aggregator` is needed — the template binds each LLM's output as a separate named variable.
+
+### Node count formula
+
+For N independent sections: `1 (start) + N (parallel LLMs) + 1 (template-transform) + 1 (answer) = N + 3 nodes`
+
+A 4-section dashboard needs 7 nodes total. A 3-section report needs 6 nodes.
+
+### Canvas positioning for parallel LLMs
+
+Source (start) and convergence (template-transform) nodes stay at y=282. Parallel LLM nodes are distributed vertically:
+
+| N | y values for parallel LLM nodes |
+| --- | --- |
+| 2 | 97, 467 |
+| 3 | 97, 282, 467 |
+| 4 | 80, 260, 440, 620 |
+
+x increments +300 per column as usual.
+
+### Variable wiring in template-transform
+
+Each parallel LLM uses `structured_output_enabled: true` with a focused schema for its one section. The template-transform binds each LLM's `output` field as a separately named variable:
+
+```yaml
+variables:
+  - value_selector: ['llm_section_a_id', 'output']
+    variable: section_a
+  - value_selector: ['llm_section_b_id', 'output']
+    variable: section_b
+  - value_selector: ['llm_section_c_id', 'output']
+    variable: section_c
+  - value_selector: ['llm_section_d_id', 'output']
+    variable: section_d
+```
+
+The Jinja2 template then renders each section independently:
+
+```jinja2
+{% if section_a.items and section_a.items|length > 0 %}
+<div class="section-a">...</div>
+{% endif %}
+
+{% if section_b.results and section_b.results|length > 0 %}
+<div class="section-b">...</div>
+{% endif %}
+```
+
+### Prompt design for focused parallel LLMs
+
+Each LLM's system prompt must be tightly scoped. The prompt for section A should say explicitly: "Extract ONLY [section A content]. Do not extract [section B], [section C], or [section D] — those are handled separately." This prevents the model from bleeding content across categories and keeps each output clean and focused.
+
+### When to use this pattern
+
+Use parallel multi-section extraction whenever the requirements describe ANY of these:
+
+- "Extract X, Y, Z from the same document"
+- "Analyze [topic] from multiple angles"
+- "Generate a report with sections A, B, C"
+- "Produce a dashboard showing [thing 1], [thing 2], [thing 3]"
+- "Check for [issue type A] and [issue type B] separately"
+
+The word "and" in a list of output sections is almost always a signal that those sections should be parallel branches, not sequential LLM calls.
+
+---
+
 See also:
-- `docs/nodes/variable-aggregator.md` — fan-in node reference
-- `docs/nodes/iteration.md` — parallel iteration configuration
-- `docs/patterns/error-handling.md` — handling failures in parallel branches
-- `docs/schema/edge-types.md` — edge sourceHandle reference
+
+- `skills/dify/references/nodes/variable-aggregator.md` — fan-in node reference
+- `skills/dify/references/nodes/iteration.md` — parallel iteration configuration
+- `skills/dify/references/patterns/error-handling.md` — handling failures in parallel branches
+- `skills/dify/references/schema/edge-types.md` — edge sourceHandle reference
