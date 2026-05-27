@@ -296,27 +296,27 @@ variables:
     variable: kpi_report         # user-chosen descriptive name; becomes {{ kpi_report.field }} in Jinja2
 ```
 
-Then in the Jinja2 template, access the entire schema hierarchy through `data`:
+Then in the Jinja2 template, access the entire schema hierarchy through `kpi_report`:
 
 ```jinja2
 {# Top-level field #}
-{{ data.summary }}
+{{ kpi_report.summary }}
 
 {# Nested object #}
-{{ data.achievement_status.annual_target_rate }}
+{{ kpi_report.achievement_status.annual_target_rate }}
 
 {# Array of objects — iterate with for loop #}
-{%- for kpi in data.achievement_status.process_kpis -%}
+{%- for kpi in kpi_report.achievement_status.process_kpis -%}
   {{ kpi.metric_name }}: {{ kpi.current_value }}
 {%- endfor -%}
 
 {# Array of strings — iterate directly #}
-{%- for trend in data.analysis_results.deal_trends -%}
+{%- for trend in kpi_report.analysis_results.deal_trends -%}
   - {{ trend }}
 {%- endfor -%}
 ```
 
-Map `structured_output` as a whole and access any fields you need via `data.field` in the template. You do not need to reference every field — use only what the current node requires.
+Map `structured_output` as a whole and access any fields you need via `kpi_report.field` in the template. You do not need to reference every field — use only what the current node requires.
 
 **In a Code node downstream**, receive the same full dict and use only the keys relevant to that node's task:
 ```python
