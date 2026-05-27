@@ -54,6 +54,7 @@ Read ALL of the following before writing a single line of YAML:
 - If the plan includes an agent node: `skills/dify/assets/chatflows/agent-chatflow.yml` — verified ground-truth structural reference; copy agent tool schemas verbatim from here, do not hand-craft them
 - If the plan includes an LLM node with vision enabled: consult `skills/dify/assets/chatflows/ocr-chatflow.yml` for the exact `vision.configs` field structure, `sys.files` variable selector, and `detail: high` setting — do NOT copy the overall file structure, only the vision node config
 - If the plan includes a knowledge-retrieval node: consult `skills/dify/assets/chatflows/rag-chatflow.yml` for the exact `multiple_retrieval_config` weights block, `query_attachment_selector`, `query_variable_selector` format, and the `{{#context#}}` user prompt pattern in the downstream LLM node — do NOT copy the overall file structure, only the relevant node configs
+- If the plan includes an LLM node with `structured_output_enabled: true`: consult `skills/dify/assets/workflows/structured-output.yml` for the exact `structured_output.schema` field structure and the correct template-transform `value_selector` pattern (`structured_output` field, `value_type: object`) — do NOT copy the overall file structure, only the relevant node configs
 
 Read the schema docs and templates to understand the exact field names, required fields, ordering conventions, and top-level structure. The templates reflect real importable DSL — treat them as ground truth.
 

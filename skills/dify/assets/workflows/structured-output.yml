@@ -1,0 +1,239 @@
+app:
+  description: Ground-truth example of structured output — an LLM node with structured_output_enabled
+    and a template-transform node consuming it via the structured_output field.
+  icon: "\U0001F4CA"
+  icon_background: '#FFEAD5'
+  mode: workflow
+  name: Structured Output Example
+  use_icon_as_answer_icon: false
+dependencies: []
+kind: app
+version: 0.5.0
+workflow:
+  conversation_variables: []
+  environment_variables: []
+  features:
+    file_upload:
+      enabled: false
+      image:
+        enabled: false
+        number_limits: 3
+        transfer_methods:
+        - local_file
+        - remote_url
+    opening_statement: ''
+    retriever_resource:
+      enabled: false
+    sensitive_word_avoidance:
+      enabled: false
+    speech_to_text:
+      enabled: false
+    suggested_questions: []
+    suggested_questions_after_answer:
+      enabled: false
+    text_to_speech:
+      enabled: false
+      language: ''
+      voice: ''
+  graph:
+    edges:
+    - data:
+        isInLoop: false
+        sourceType: start
+        targetType: llm
+      id: 1700000000001-source-1700000000002-target
+      source: '1700000000001'
+      sourceHandle: source
+      target: '1700000000002'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInLoop: false
+        sourceType: llm
+        targetType: template-transform
+      id: 1700000000002-source-1700000000003-target
+      source: '1700000000002'
+      sourceHandle: source
+      target: '1700000000003'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInLoop: false
+        sourceType: template-transform
+        targetType: end
+      id: 1700000000003-source-1700000000004-target
+      source: '1700000000003'
+      sourceHandle: source
+      target: '1700000000004'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    nodes:
+    - data:
+        desc: ''
+        selected: false
+        title: Start
+        type: start
+        variables:
+        - default: ''
+          hint: ''
+          label: input_text
+          max_length: 2048
+          options: []
+          placeholder: ''
+          required: true
+          type: text-input
+          variable: input_text
+      height: 90
+      id: '1700000000001'
+      position:
+        x: 80
+        y: 282
+      positionAbsolute:
+        x: 80
+        y: 282
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 243
+    - data:
+        context:
+          enabled: false
+          variable_selector: []
+        desc: ''
+        model:
+          completion_params:
+            temperature: 0.3
+          mode: chat
+          name: Claude-4-Sonnet
+          provider: langgenius/openai_api_compatible/openai_api_compatible
+        prompt_template:
+        - id: a1b2c3d4-0001-0000-0000-000000000001
+          role: system
+          text: "Analyze the following text and return a structured assessment.\n\nText:\
+            \ {{#1700000000001.input_text#}}"
+        selected: false
+        structured_output:
+          schema:
+            additionalProperties: false
+            properties:
+              key_topics:
+                description: List of main topics mentioned.
+                items:
+                  type: string
+                type: array
+              sentiment:
+                description: Overall sentiment of the text.
+                enum:
+                - positive
+                - negative
+                - neutral
+                type: string
+              summary:
+                description: One-sentence summary of the text.
+                type: string
+              word_count_estimate:
+                description: 'Estimated word count as a string (e.g. "~200 words").'
+                type: string
+            required:
+            - summary
+            - sentiment
+            - key_topics
+            - word_count_estimate
+            type: object
+        structured_output_enabled: true
+        title: Analyze Text
+        type: llm
+        vision:
+          enabled: false
+      height: 98
+      id: '1700000000002'
+      position:
+        x: 383
+        y: 282
+      positionAbsolute:
+        x: 383
+        y: 282
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 243
+    - data:
+        desc: ''
+        selected: false
+        template: "<div style=\"font-family:system-ui,sans-serif; max-width:680px;\
+          \ padding:20px; border-radius:12px; border:1px solid #e2e8f0; border-top:5px\
+          \ solid #1c64f2; background:#ffffff; box-shadow:0 4px 15px rgba(0,0,0,0.05);\"\
+          >\n<h3 style=\"margin:0 0 12px 0; color:#1e3a8a; font-size:16px;\">Text\
+          \ Analysis</h3>\n<div style=\"background:#eff6ff; padding:12px; border-radius:8px;\
+          \ margin-bottom:12px; font-size:14px; color:#1e40af; line-height:1.6;\"\
+          >\n<strong>Summary:</strong> {{ analysis_result.summary }}\n</div>\n{%-\
+          \ set is_positive = analysis_result.sentiment == 'positive' -%}\n{%- set\
+          \ is_negative = analysis_result.sentiment == 'negative' -%}\n{%- set badge_color\
+          \ = '#16a34a' if is_positive else ('#dc2626' if is_negative else '#d97706')\
+          \ -%}\n<div style=\"display:flex; align-items:center; gap:8px; margin-bottom:12px;\"\
+          >\n<span style=\"font-size:13px; color:#334155;\">Sentiment:</span>\n<span\
+          \ style=\"background:{{ badge_color }}; color:#ffffff; padding:3px 10px;\
+          \ border-radius:12px; font-size:12px; font-weight:bold;\">{{ analysis_result.sentiment\
+          \ }}</span>\n<span style=\"font-size:12px; color:#64748b; margin-left:auto;\"\
+          >{{ analysis_result.word_count_estimate }}</span>\n</div>\n<div style=\"\
+          font-size:13px; color:#334155;\">\n<strong>Topics:</strong>\n<div style=\"\
+          display:flex; flex-wrap:wrap; gap:6px; margin-top:6px;\">\n{%- for topic\
+          \ in analysis_result.key_topics -%}\n<span style=\"background:#e0f2fe;\
+          \ color:#0284c7; border:1px solid #bae6fd; padding:3px 10px; border-radius:20px;\
+          \ font-size:11px;\">{{ topic }}</span>\n{%- endfor -%}\n</div>\n</div>\n\
+          </div>"
+        title: Format Result
+        type: template-transform
+        variables:
+        - value_selector:
+          - '1700000000002'
+          - structured_output
+          value_type: object
+          variable: analysis_result
+      height: 54
+      id: '1700000000003'
+      position:
+        x: 686
+        y: 282
+      positionAbsolute:
+        x: 686
+        y: 282
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 243
+    - data:
+        desc: ''
+        outputs:
+        - value_selector:
+          - '1700000000003'
+          - output
+          value_type: string
+          variable: formatted_output
+        selected: false
+        title: End
+        type: end
+      height: 90
+      id: '1700000000004'
+      position:
+        x: 989
+        y: 282
+      positionAbsolute:
+        x: 989
+        y: 282
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 243
+    viewport:
+      x: 0
+      y: 0
+      zoom: 1
+  rag_pipeline_variables: []
