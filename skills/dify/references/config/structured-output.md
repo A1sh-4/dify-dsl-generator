@@ -28,7 +28,7 @@ This document covers when to use structured output, how to configure the schema 
 
 ## JSON Schema Configuration
 
-Structured output is configured directly on the LLM node in the DSL. Set `structured_output_enabled: true` and provide the schema under `structured_output_schema`. The schema follows the JSON Schema specification (draft-07 compatible).
+Structured output is configured directly on the LLM node in the DSL. Set `structured_output_enabled: true` and provide the schema nested under `structured_output.schema`. The schema follows the JSON Schema specification (draft-07 compatible).
 
 **Full example — article analysis:**
 
@@ -47,49 +47,52 @@ nodes:
             Analyze the provided article. Return a structured assessment
             covering the title, sentiment, quality score, relevant tags,
             and document metadata.
-      structured_output_enabled: true
-      structured_output_schema:
-        type: object
-        properties:
-          title:
-            type: string
-            description: "Article title extracted from the content, maximum 100 characters"
-          sentiment:
-            type: string
-            enum:
-              - positive
-              - negative
-              - neutral
-            description: "Overall sentiment of the article"
-          score:
-            type: number
-            minimum: 0
-            maximum: 10
-            description: "Quality score from 0 (lowest) to 10 (highest)"
-          tags:
-            type: array
-            items:
+      structured_output:
+        schema:
+          additionalProperties: false
+          type: object
+          properties:
+            title:
               type: string
-            description: "List of relevant topic tags, maximum 5"
-          metadata:
-            type: object
-            properties:
-              language:
+              description: "Article title extracted from the content, maximum 100 characters"
+            sentiment:
+              type: string
+              enum:
+                - positive
+                - negative
+                - neutral
+              description: "Overall sentiment of the article"
+            score:
+              type: number
+              minimum: 0
+              maximum: 10
+              description: "Quality score from 0 (lowest) to 10 (highest)"
+            tags:
+              type: array
+              items:
                 type: string
-                description: "ISO 639-1 language code (e.g., en, fr, de)"
-              word_count:
-                type: number
-                description: "Approximate word count of the article"
-              has_citations:
-                type: boolean
-                description: "Whether the article includes citations or references"
-            required:
-              - language
-              - word_count
-        required:
-          - title
-          - sentiment
-          - score
+              description: "List of relevant topic tags, maximum 5"
+            metadata:
+              additionalProperties: false
+              type: object
+              properties:
+                language:
+                  type: string
+                  description: "ISO 639-1 language code (e.g., en, fr, de)"
+                word_count:
+                  type: number
+                  description: "Approximate word count of the article"
+                has_citations:
+                  type: boolean
+                  description: "Whether the article includes citations or references"
+              required:
+                - language
+                - word_count
+          required:
+            - title
+            - sentiment
+            - score
+      structured_output_enabled: true
 ```
 
 ---
@@ -187,40 +190,49 @@ required:
 
 ## Accessing Structured Output Fields in Downstream Nodes
 
-When `structured_output_enabled: true`, the LLM node exposes its fields under `.output` rather than under `.text`. You must use the `.output.field_name` path to access individual fields.
+When `structured_output_enabled: true`, the LLM node exposes the parsed JSON object as the `structured_output` field — not `output`. The field is a typed `object` value that downstream nodes receive by mapping it to a named variable.
 
-**Reference syntax:**
-```
-{{#node_id.output.field_name#}}
-```
+**In a template-transform node**, map the whole object to one descriptive variable, then access fields in Jinja2:
 
-**Examples using the article analysis schema above:**
-
-```
-Title:     {{#analyze_article.output.title#}}
-Sentiment: {{#analyze_article.output.sentiment#}}
-Score:     {{#analyze_article.output.score#}}
-Tags:      {{#analyze_article.output.tags#}}
-Language:  {{#analyze_article.output.metadata.language#}}
-```
-
-**Accessing nested object fields:** Use dot notation through the path.
-```
-{{#analyze_article.output.metadata.language#}}
-{{#analyze_article.output.metadata.word_count#}}
-```
-
-**Important:** Do not use `{{#analyze_article.text#}}` on a structured output node — the `.text` field will contain the raw JSON string, not the parsed fields. Always access structured fields through `.output.field_name`.
-
-**Condition node usage example:**
-
-In an IF/ELSE node that branches on sentiment:
 ```yaml
-conditions:
-  - variable: "{{#analyze_article.output.sentiment#}}"
-    operator: equals
-    value: "negative"
+variables:
+  - value_selector:
+      - 'analyze_article'       # the LLM node's id
+      - structured_output       # always "structured_output" — not "output"
+    value_type: object          # required
+    variable: article_result    # user-chosen descriptive name
 ```
+
+Then in the Jinja2 template:
+
+```jinja2
+Title:     {{ article_result.title }}
+Sentiment: {{ article_result.sentiment }}
+Score:     {{ article_result.score }}
+Language:  {{ article_result.metadata.language }}
+```
+
+**In a code node**, same wiring — `structured_output` as the field, `object` as `value_type`, and a parameter name that matches the Python function signature:
+
+```yaml
+variables:
+  - value_selector:
+      - 'analyze_article'
+      - structured_output
+    value_type: object
+    variable: article_result    # must match the Python function parameter name
+```
+
+```python
+def main(article_result: dict) -> dict:
+    return {"sentiment": article_result.get("sentiment", "unknown")}
+```
+
+**Variable naming rule:** The `variable:` name is yours to define — it is not fixed by Dify. Use a descriptive name that says what the data is (`article_result`, `kpi_report`, `pipeline_summary`) rather than a generic name like `data`. For code nodes, this name must match the Python function parameter exactly.
+
+**Important:** Do not use `.text` to access structured fields — `.text` gives the raw JSON string. Use the `structured_output` field selector and navigate fields through your named variable in Jinja2 or Python.
+
+**If-else branching on a structured field:** To branch on a specific field value, route it through a template-transform or code node that outputs the scalar field you need, then branch on that scalar in an IF/ELSE node downstream.
 
 ---
 
@@ -273,7 +285,7 @@ These two Dify features solve related but distinct problems. Understanding the d
 | Schema control | Full JSON Schema (types, enums, nested) | Simpler parameter list |
 | Best for | Extracting fields from documents, analysis tasks | Pulling intent/parameters from user queries |
 | Requires | Model with native structured output support | Any model |
-| Output path | `.output.field_name` | `.field_name` directly |
+| Output path | `structured_output` field → named variable → Jinja2/Python | `.field_name` directly |
 
 **Decision rule:**
 - If you are analyzing a document or generating a structured response: use **structured output on an LLM node**
