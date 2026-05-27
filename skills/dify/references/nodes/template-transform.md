@@ -29,7 +29,7 @@ For `array[object]` inputs, access fields inside the loop with `{{ item['key'] }
 
 ## Structured-then-Rendered Input Pattern
 
-When the upstream LLM node uses `structured_output_enabled: true`, its full parsed JSON response is available as the `output` field. Map the entire object to one template variable — then use Jinja2 dot notation to navigate nested keys, arrays, and objects.
+When the upstream LLM node uses `structured_output_enabled: true`, its full parsed JSON response is available as the `structured_output` field. Map the entire object to one template variable — then use Jinja2 dot notation to navigate nested keys, arrays, and objects.
 
 **YAML wiring:**
 ```yaml
@@ -44,23 +44,23 @@ variables:
 **Jinja2 access patterns:**
 ```jinja2
 {# Top-level string field #}
-{{ data.summary }}
+{{ analysis_result.summary }}
 
 {# Nested object field #}
-{{ data.achievement_status.annual_target_rate }}
+{{ analysis_result.achievement_status.annual_target_rate }}
 
 {# Array of objects — iterate #}
-{%- for kpi in data.achievement_status.process_kpis -%}
+{%- for kpi in analysis_result.achievement_status.process_kpis -%}
   {{ kpi.metric_name }}: {{ kpi.current_value }} / {{ kpi.target_value }}
 {%- endfor -%}
 
 {# Array of strings — iterate directly #}
-{%- for trend in data.analysis_results.deal_trends -%}
+{%- for trend in analysis_result.analysis_results.deal_trends -%}
   <li>{{ trend }}</li>
 {%- endfor -%}
 ```
 
-Map `structured_output` as a whole — that is the field name exposed by the LLM node when structured output is enabled. Choose a descriptive `variable:` name that says what the data represents (e.g., `analysis_result`, `kpi_report`, `pipeline_summary`) rather than a generic name like `data`. Inside the template, access only the fields you actually need. Use `your_variable_name.field` for what each section requires and ignore the rest.
+Map `structured_output` as a whole — that is the field name exposed by the LLM node when structured output is enabled. Choose a descriptive `variable:` name that says what the data represents (e.g., `analysis_result`, `kpi_report`, `pipeline_summary`) rather than a generic name like `data`. Inside the template, access only the fields you actually need. Use `analysis_result.field` for what each section requires and ignore the rest.
 
 **Variable naming rule (applies to both template-transform and code nodes):**
 
@@ -673,8 +673,10 @@ variables:
       - 'llm_node_id'
       - structured_output       # the field exposed by the LLM node with structured_output_enabled: true
     value_type: object
-    variable: data              # kept as "data" in this example to match {{ data.xxx }} references below;
-                                # in your own flows, use a descriptive name like "kpi_report" or "analysis_result"
+    variable: data              # NOTE: "data" is used here only because the Jinja2 template
+                                # below has 40+ {{ data.xxx }} references that would all need
+                                # updating. In YOUR flows, always use a descriptive name like
+                                # "kpi_report", "analysis_result", or "pipeline_summary".
 ```
 
 **Template:**
