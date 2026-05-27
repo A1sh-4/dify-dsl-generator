@@ -43,8 +43,8 @@ model:
     temperature: 0.7
     top_p: 1
   mode: chat
-  name: claude-3-5-sonnet-20241022
-  provider: anthropic
+  name: Claude-4-Sonnet
+  provider: langgenius/openai_api_compatible/openai_api_compatible
 ```
 
 **Field descriptions:**
@@ -68,22 +68,24 @@ Prompts are defined as an ordered array of message objects. This mirrors the cha
 
 ```yaml
 prompt_template:
-  - id: 'system-prompt-id'
+  - id: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890'
     role: system
     text: "You are a helpful assistant. Answer the user's question clearly.\n\nContext: {{#knowledge_node.result#}}"
-  - id: 'user-prompt-id'
+  - id: 'b2c3d4e5-f6a7-8901-bcde-f12345678901'
     role: user
     text: "{{#start.user_question#}}"
 ```
 
 **Field descriptions:**
 
-- `id`: A unique string identifier for this message. Can be any unique string.
+- `id`: A unique UUIDv4 string per prompt entry. Required — Dify uses it to identify each prompt block in the editor.
 - `role`: The message role. Valid values are `system`, `user`, or `assistant`.
   - `system`: Sets the model's behavior and persona. Usually the first entry.
   - `user`: Represents the human turn. Contains the actual request.
   - `assistant`: Used for few-shot examples — a prefilled assistant response that primes the model.
 - `text`: The prompt content. Supports `{{#node_id.field#}}` variable injection anywhere in the string. Use `\n` for newlines within YAML strings.
+
+Note: Real Dify exports do NOT include an `edition_type` field on prompt entries — omit it.
 
 **Variable injection syntax:** `{{#node_id.field_name#}}`
 
@@ -94,23 +96,41 @@ prompt_template:
 
 ## Vision Configuration (for multimodal models)
 
-Enable vision when the workflow passes image inputs to a multimodal model.
+Enable vision when the workflow passes image inputs to a multimodal model. Use cases include: OCR (text extraction from images), visual question answering, extracting structured data from screenshots or forms, reading charts and tables, analyzing diagrams, and parameter extraction from photos.
+
+**Source: chatflow chat attachment (most common)**
+
+In an advanced-chat app, images attached by the user to their message are available via `sys.files`:
 
 ```yaml
 vision:
   enabled: true
   configs:
-    detail: high   # or low
+    detail: high
     variable_selector:
-      - start
-      - uploaded_image
+      - sys
+      - files
 ```
 
-- `enabled`: Set to `true` to activate image input processing.
-- `detail`: Image analysis depth. `high` uses more tokens for detailed analysis; `low` is faster and cheaper.
-- `variable_selector`: Array path `[node_id, field_name]` pointing to the image variable.
+**Source: start node file variable (workflow or form-based chatflow)**
 
-Only enable vision when the upstream node actually provides an image. Most models require a specific variant (e.g., `claude-3-5-sonnet-20241022` supports vision natively).
+If the image comes from a `file`-type variable defined in the start node:
+
+```yaml
+vision:
+  enabled: true
+  configs:
+    detail: high
+    variable_selector:
+      - '[start_node_id]'   # the actual 13-digit ID of the start node
+      - uploaded_image       # the variable name defined in the start node
+```
+
+- `detail: high` — reads at full resolution; required for OCR, small text, tables, and detailed diagrams
+- `detail: low` — faster and cheaper; sufficient for simple scene description or color/layout questions where fine detail does not matter
+- Only set `enabled: true` when the upstream path actually provides an image — leaving it true with no image input causes an empty vision context
+
+**Ground-truth config reference:** `skills/dify/assets/chatflows/ocr-chatflow.yml` — shows a complete working LLM vision node with `sys.files`, `detail: high`, and the exact field ordering as exported from a real Dify instance.
 
 ## Context Configuration (for RAG workflows)
 
@@ -120,51 +140,65 @@ When using a Knowledge Retrieval node upstream, pass its results to the LLM via 
 context:
   enabled: true
   variable_selector:
-    - knowledge_node
+    - '[knowledge_retrieval_node_id]'   # actual 13-digit ID of the knowledge-retrieval node
     - result
 ```
 
-- `enabled`: Set to `true` to inject knowledge retrieval results as context.
-- `variable_selector`: Array path pointing to the retrieval result variable.
+- `enabled`: Set to `true` to inject retrieved document chunks into the prompt automatically.
+- `variable_selector`: Points to the `result` output of a knowledge-retrieval node. The result is an array of objects — each object has `content`, `score`, `title`, and `url` fields.
 
-This is the standard pattern for Retrieval-Augmented Generation (RAG). The retrieved documents are injected into the prompt automatically in a structured format.
+When context is enabled, use `{{#context#}}` in the user prompt template to explicitly place the retrieved documents in the user turn:
+
+```yaml
+prompt_template:
+  - edition_type: basic
+    id: '[uuid]'
+    role: system
+    text: 'Answer only from the provided context. Cite your sources.'
+  - edition_type: basic
+    id: '[uuid]'
+    role: user
+    text: '{{#context#}}'
+```
+
+`{{#context#}}` expands to the retrieved document chunks at runtime. The user's actual question is carried separately via `memory.query_prompt_template` (set to `{{#sys.query#}}`). The model therefore sees both the retrieved evidence and the user's question.
+
+**Ground-truth config reference:** `skills/dify/assets/chatflows/rag-chatflow.yml` — shows a complete working RAG LLM node with context enabled, `{{#context#}}` user prompt, and the correct memory template as exported from a real Dify instance.
 
 ## Structured Output
 
 When you need the LLM to return a specific JSON structure instead of free text, enable structured output. The two fields are siblings at the top level of the node's `data` block — `structured_output_enabled` is the toggle and `structured_output` holds the JSON Schema.
 
-**Default (disabled) form — always include both fields even when disabled:**
+**Disabled form — omit both fields entirely:**
 
-```yaml
-structured_output: {}
-structured_output_enabled: false
-```
+When the LLM node does not use structured output, do not include `structured_output` or `structured_output_enabled` at all. Their absence is how Dify knows the feature is off. Writing `structured_output: {}` or `structured_output_enabled: false` is incorrect and may cause unexpected behavior.
 
 **Enabled form:**
 
 ```yaml
-structured_output_enabled: true
 structured_output:
-  type: object
-  properties:
-    summary:
-      type: string
-    sentiment:
-      type: string
-      enum:
-        - positive
-        - negative
-        - neutral
-    score:
-      type: number
-    is_valid:
-      type: boolean
-  required:
-    - summary
-    - sentiment
-    - score
-    - is_valid
-  additionalProperties: false
+  schema:
+    additionalProperties: false
+    type: object
+    properties:
+      summary:
+        type: string
+      sentiment:
+        type: string
+        enum:
+          - positive
+          - negative
+          - neutral
+      score:
+        type: number
+      is_valid:
+        type: boolean
+    required:
+      - summary
+      - sentiment
+      - score
+      - is_valid
+structured_output_enabled: true
 ```
 
 **Supported schema types:**
@@ -182,62 +216,63 @@ structured_output:
 **Full nested schema example (complex real-world shape):**
 
 ```yaml
-structured_output_enabled: true
 structured_output:
-  type: object
-  properties:
-    achievement_status:
-      type: object
-      properties:
-        annual_target_rate:
-          type: string
-          description: "Achievement rate explained from Count, Amount, and Pipeline perspectives."
-        process_kpis:
-          type: array
-          items:
-            type: object
-            properties:
-              metric_name:
-                type: string
-              current_value:
-                type: string
-              target_value:
-                type: string
-              calculation_details:
-                type: string
-              is_achieved:
-                type: string
-            required:
-              - metric_name
-              - current_value
-              - target_value
-              - calculation_details
-              - is_achieved
-            additionalProperties: false
-      required:
-        - annual_target_rate
-        - process_kpis
-      additionalProperties: false
-    focus_areas:
-      type: array
-      items:
+  schema:
+    additionalProperties: false
+    type: object
+    properties:
+      achievement_status:
         type: object
         properties:
-          company_name:
+          annual_target_rate:
             type: string
-          next_action:
-            type: string
-          reason_for_focus:
-            type: string
+            description: "Achievement rate explained from Count, Amount, and Pipeline perspectives."
+          process_kpis:
+            type: array
+            items:
+              type: object
+              properties:
+                metric_name:
+                  type: string
+                current_value:
+                  type: string
+                target_value:
+                  type: string
+                calculation_details:
+                  type: string
+                is_achieved:
+                  type: string
+              required:
+                - metric_name
+                - current_value
+                - target_value
+                - calculation_details
+                - is_achieved
+              additionalProperties: false
         required:
-          - company_name
-          - next_action
-          - reason_for_focus
+          - annual_target_rate
+          - process_kpis
         additionalProperties: false
-  required:
-    - achievement_status
-    - focus_areas
-  additionalProperties: false
+      focus_areas:
+        type: array
+        items:
+          type: object
+          properties:
+            company_name:
+              type: string
+            next_action:
+              type: string
+            reason_for_focus:
+              type: string
+          required:
+            - company_name
+            - next_action
+            - reason_for_focus
+          additionalProperties: false
+    required:
+      - achievement_status
+      - focus_areas
+structured_output_enabled: true
 ```
 
 **Conventions:**
@@ -248,16 +283,17 @@ structured_output:
 
 **Accessing structured output fields downstream:**
 
-When `structured_output_enabled: true`, Dify parses the LLM's JSON response and makes the resulting object available as the `output` field of the node. Map the whole `output` object to a single template variable — the Jinja2 template then navigates the nested structure with dot notation.
+When `structured_output_enabled: true`, Dify parses the LLM's JSON response and makes the resulting object available as the `structured_output` field of the node. Map the whole `structured_output` object to a single template variable — the Jinja2 template then navigates the nested structure with dot notation.
 
-In a **template-transform** node, map `output` → one variable (conventionally named `data`):
+In a **template-transform** node, map `structured_output` → one variable (conventionally named `data`):
 
 ```yaml
 variables:
   - value_selector:
       - 'llm_node_id'
-      - output
-    variable: data
+      - structured_output       # NOT "output" — this is the field the LLM node exposes
+    value_type: object           # required
+    variable: kpi_report         # user-chosen descriptive name; becomes {{ kpi_report.field }} in Jinja2
 ```
 
 Then in the Jinja2 template, access the entire schema hierarchy through `data`:
@@ -280,7 +316,7 @@ Then in the Jinja2 template, access the entire schema hierarchy through `data`:
 {%- endfor -%}
 ```
 
-Map `output` as a whole and access any fields you need via `data.field` in the template. You do not need to reference every field — use only what the current node requires.
+Map `structured_output` as a whole and access any fields you need via `data.field` in the template. You do not need to reference every field — use only what the current node requires.
 
 **In a Code node downstream**, receive the same full dict and use only the keys relevant to that node's task:
 ```python
@@ -337,16 +373,15 @@ Replace `llm_node_id` with the actual `id` of your LLM node (the numeric string 
 
 ## Complete YAML Example
 
-A full LLM node with all required fields, RAG context enabled, and structured output disabled (the standard default form):
+A minimal LLM node with RAG context enabled — matches real Dify export structure:
 
 ```yaml
 - data:
     context:
       enabled: true
       variable_selector:
-        - '1732007415800'
-        - result
-    desc: Generates a grounded answer using retrieved knowledge base context
+      - '1732007415800'
+      - result
     memory:
       query_prompt_template: '{{#sys.query#}}'
       role_prefix:
@@ -358,34 +393,24 @@ A full LLM node with all required fields, RAG context enabled, and structured ou
     model:
       completion_params:
         temperature: 0.3
-        max_tokens: 2000
       mode: chat
-      name: claude-sonnet-4-6
-      provider: anthropic
+      name: Claude-4-Sonnet
+      provider: langgenius/openai_api_compatible/openai_api_compatible
     prompt_template:
-      - edition_type: basic
-        id: a1b2c3d4-0000-0000-0000-000000000001
-        role: system
-        text: "You are a knowledgeable assistant. Use the provided context to answer\
-          \ the user's question accurately and concisely. If the context does not\
-          \ contain relevant information, say so clearly."
-      - edition_type: basic
-        id: a1b2c3d4-0000-0000-0000-000000000002
-        role: user
-        text: '{{#sys.query#}}'
-    retry_config:
-      max_retries: 3
-      retry_enabled: true
-      retry_interval: 1000
+    - id: a1b2c3d4-0000-0000-0000-000000000001
+      role: system
+      text: 'You are a knowledgeable assistant. Use the provided context to answer
+        the user''s question accurately and concisely. If the context does not contain
+        relevant information, say so clearly.'
+    - id: a1b2c3d4-0000-0000-0000-000000000002
+      role: user
+      text: '{{#context#}}'
     selected: false
-    structured_output: {}
-    structured_output_enabled: false
     title: Generate Answer
     type: llm
-    variables: []
     vision:
       enabled: false
-  height: 98
+  height: 90
   id: '1732007415808'
   position:
     x: 680
@@ -397,20 +422,24 @@ A full LLM node with all required fields, RAG context enabled, and structured ou
   sourcePosition: right
   targetPosition: left
   type: custom
-  width: 244
+  width: 243
 ```
 
 **Required fields checklist** — every LLM node in a valid DSL must have all of these:
 
-- `context` — even if disabled (`enabled: false, variable_selector: []`)
-- `memory` — even if disabled (`window.enabled: false`)
+- `context` — always present, even when disabled (`enabled: false, variable_selector: []`)
+- `memory` — include for chatflows where conversation history matters; omit for one-shot flows
 - `model` — with `completion_params`, `mode`, `name`, `provider`
-- `prompt_template` — each entry must have `edition_type: basic`, `id` (UUIDv4), `role`, `text`
-- `retry_config` — always include; set `retry_enabled: true, max_retries: 3, retry_interval: 1000`
-- `structured_output` — use `{}` when disabled
-- `structured_output_enabled` — always present, `false` unless JSON output is required
-- `variables` — always `[]` unless the node uses variable injection from a non-prompt source
+- `prompt_template` — each entry must have `id` (UUIDv4), `role`, `text`; no `edition_type` field
+- `selected: false`
+- `title`
+- `type: llm`
 - `vision` — always present, `enabled: false` unless image input is needed
+
+**Optional fields** (only include when the feature is actually used):
+
+- `structured_output` (with `schema:` nested inside) + `structured_output_enabled: true` — only when the node must return named JSON fields; omit BOTH fields entirely when not used (do not write `structured_output: {}`)
+- `variables` — only needed for non-prompt variable injection patterns
 
 ## Common Mistakes
 
