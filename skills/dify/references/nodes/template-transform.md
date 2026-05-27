@@ -36,8 +36,9 @@ When the upstream LLM node uses `structured_output_enabled: true`, its full pars
 variables:
   - value_selector:
       - 'llm_node_id'
-      - output
-    variable: data
+      - structured_output       # field exposed by the LLM node — NOT "output"
+    value_type: object           # required when consuming a structured output object
+    variable: analysis_result    # user-chosen descriptive name; use in Jinja2 as {{ analysis_result.field }}
 ```
 
 **Jinja2 access patterns:**
@@ -59,7 +60,19 @@ variables:
 {%- endfor -%}
 ```
 
-Map `output` as a whole. Inside the template, access only the fields you actually need — you are not required to reference every key in the schema. Use `data.field` for what each section of the template requires and ignore the rest.
+Map `structured_output` as a whole — that is the field name exposed by the LLM node when structured output is enabled. Choose a descriptive `variable:` name that says what the data represents (e.g., `analysis_result`, `kpi_report`, `pipeline_summary`) rather than a generic name like `data`. Inside the template, access only the fields you actually need. Use `your_variable_name.field` for what each section requires and ignore the rest.
+
+**Variable naming rule (applies to both template-transform and code nodes):**
+
+The `variable:` name in the `variables` array is yours to define — it is not fixed by Dify. Choose a name that communicates what the data contains:
+
+| Instead of | Use |
+| --- | --- |
+| `data` | `kpi_report`, `analysis_result`, `pipeline_summary` |
+| `result` | `extracted_text`, `classification_output`, `search_result` |
+| `input` | `user_query`, `uploaded_doc`, `form_fields` |
+
+For code nodes: the `variable:` in the `outputs` list must **exactly match** the dict key your Python `main()` returns — this is a correctness requirement, not just a naming preference.
 
 ---
 
@@ -658,8 +671,10 @@ This example renders a full dashboard from a `data` variable that holds the pars
 variables:
   - value_selector:
       - 'llm_node_id'
-      - output
-    variable: data
+      - structured_output       # the field exposed by the LLM node with structured_output_enabled: true
+    value_type: object
+    variable: data              # kept as "data" in this example to match {{ data.xxx }} references below;
+                                # in your own flows, use a descriptive name like "kpi_report" or "analysis_result"
 ```
 
 **Template:**
