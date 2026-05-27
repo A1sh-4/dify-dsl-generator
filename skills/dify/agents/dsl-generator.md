@@ -437,18 +437,18 @@ variables:
     variable: items
 ```
 
-**When the template-transform node receives structured output from an LLM node**, use `structured_output` as the field name (not `output`) and add `value_type: object`:
+**When consuming structured output from an LLM node**, use `structured_output` as the field name (not `output`), and add `value_type: object`:
 
 ```yaml
 variables:
   - value_selector:
       - "[llm_node_id]"
-      - structured_output        # NOT "output" — the field the LLM node exposes
+      - structured_output        # NOT "output" — the field exposed by the LLM node
     value_type: object           # required
     variable: report_data        # user-chosen descriptive name; use as {{ report_data.field }} in Jinja2
 ```
 
-Choose a descriptive `variable:` name (e.g., `kpi_report`, `analysis_result`) rather than a generic name like `data`.
+Choose a descriptive `variable:` name (e.g., `kpi_report`, `analysis_result`) — not a generic name like `data`.
 
 Template rendering notes:
 - Jinja2 syntax inside the template string: `{{ var }}` for output, `{% if %}`, `{% for %}` for logic
@@ -884,7 +884,7 @@ Before presenting output to the user, confirm every item:
 - [ ] A `template-transform` node is present as the second-to-last node (before `answer` or `end`) — omit only if the plan explicitly noted a reason to skip it
 - [ ] Every LLM `prompt_template` entry has a unique `id` (UUIDv4), `role`, and `text` — no `edition_type` field
 - [ ] LLM nodes do NOT include `retry_config`, `variables: []`, or `structured_output`/`structured_output_enabled` unless structured output is actually used — when disabled, omit both fields entirely (do not write `structured_output: {}`)
-- [ ] When `structured_output` IS used: the schema lives at `structured_output.schema.properties` (not at `structured_output.properties` directly); `additionalProperties: false` appears at every object level
+- [ ] When `structured_output` IS used: the schema lives at `structured_output.schema.properties` (not at `structured_output.properties` directly); `additionalProperties: false` appears at every object level including nested objects
 - [ ] Every code node uses `variables:` array (NOT `inputs:` dict) for inputs
 - [ ] Every code node `outputs:` is a LIST where each item has `type:` and `variable:` — never a dict, never missing `variable:`
 - [ ] End node `outputs` entries use `value_type:` (NOT `label:`)
