@@ -51,6 +51,9 @@ Read ALL of the following before writing a single line of YAML:
 **Templates (use as structural reference, not as copy-paste):**
 - If chatflow: `skills/dify/assets/templates/starter-chatflow.yml`
 - If workflow: `skills/dify/assets/templates/starter-workflow.yml`
+- If the plan includes an agent node: `skills/dify/assets/chatflows/agent-chatflow.yml` — verified ground-truth structural reference; copy agent tool schemas verbatim from here, do not hand-craft them
+- If the plan includes an LLM node with vision enabled: consult `skills/dify/assets/chatflows/ocr-chatflow.yml` for the exact `vision.configs` field structure, `sys.files` variable selector, and `detail: high` setting — do NOT copy the overall file structure, only the vision node config
+- If the plan includes a knowledge-retrieval node: consult `skills/dify/assets/chatflows/rag-chatflow.yml` for the exact `multiple_retrieval_config` weights block, `query_attachment_selector`, `query_variable_selector` format, and the `{{#context#}}` user prompt pattern in the downstream LLM node — do NOT copy the overall file structure, only the relevant node configs
 
 Read the schema docs and templates to understand the exact field names, required fields, ordering conventions, and top-level structure. The templates reflect real importable DSL — treat them as ground truth.
 
@@ -119,6 +122,14 @@ workflow:
   features:                         # REQUIRED — always include the full block, NEVER omit or use {}
     file_upload:
       enabled: [true | false]       # true only if "file upload" in requirements; false otherwise
+      fileUploadConfig:             # include this block when enabled: true; omit it entirely when enabled: false
+        audio_file_size_limit: 50
+        batch_count_limit: 5
+        file_size_limit: 15
+        image_file_size_limit: 10
+        single_chunk_attachment_limit: 5
+        video_file_size_limit: 100
+        workflow_file_upload_limit: 10
       image:
         enabled: [true | false]
         number_limits: 3
@@ -211,7 +222,7 @@ workflow:
 - `rag_pipeline_variables: []` must be the last key inside `workflow`
 - `version: 0.5.0` — unquoted, exactly this value
 
-### Step 6 — Build each node's YAML block
+### Step 5 — Build each node's YAML block
 
 For every node in the approved plan, build a complete YAML node entry. Use this template as the wrapper:
 
@@ -256,7 +267,7 @@ type: llm
 context:
   enabled: false                    # set true when consuming knowledge-retrieval output
   variable_selector: []             # if enabled: [[retrieval_node_id, "result"]]
-memory:
+memory:                             # include for chatflows; omit for one-shot flows that don't need conversation history
   query_prompt_template: "{{#sys.query#}}"
   role_prefix:
     assistant: ""
@@ -268,29 +279,33 @@ model:
   completion_params:
     temperature: [value from prompt-engineer spec]
   mode: chat
-  name: claude-sonnet-4-6
-  provider: anthropic
+  name: Claude-4-Sonnet      # PLACEHOLDER — substitute the model name your Dify instance uses.
+                              # This value comes from the requirements brief or from the user's
+                              # model-provider configuration. Check skills/dify/references/config/model-providers.md
+                              # for valid name/provider combinations. Common alternatives:
+                              #   claude-sonnet-4-5  (Anthropic native provider)
+                              #   gpt-4o             (OpenAI)
+                              #   gemini-1.5-pro     (Google)
+  provider: langgenius/openai_api_compatible/openai_api_compatible
+                              # PLACEHOLDER — substitute your workspace's provider ID.
+                              # Examples: anthropic/claude, openai/openai, google/gemini
 prompt_template:
-  - edition_type: basic
-    id: "[generate a UUIDv4 here — e.g. a1b2c3d4-e5f6-7890-abcd-ef1234567890]"
+  - id: "[generate a UUIDv4 here — e.g. a1b2c3d4-e5f6-7890-abcd-ef1234567890]"
     role: system
     text: "[system prompt from prompt-engineer spec]"
-  - edition_type: basic
-    id: "[generate a different UUIDv4 here]"
+  - id: "[generate a different UUIDv4 here]"
     role: user
     text: "[user prompt template with {{#node_id.field#}} references]"
-retry_config:
-  max_retries: 3
-  retry_enabled: true
-  retry_interval: 1000
-structured_output: {}
-structured_output_enabled: false
-variables: []
+selected: false
 vision:
   enabled: false                    # set true only if image input is needed
 ```
 
-**CRITICAL LLM rule**: Every `prompt_template` entry MUST have a unique `id` (UUIDv4) and `edition_type: basic`. Missing these causes the node to fail to load in the Dify editor.
+**CRITICAL LLM rule**: Every `prompt_template` entry MUST have a unique `id` (UUIDv4), `role`, and `text`. Do NOT include `edition_type` — it is not a real Dify field and does not appear in real exports.
+
+**Optional LLM fields** — only include when the feature is needed:
+- `structured_output` + `structured_output_enabled: true` — only when the node must return named JSON fields; omit entirely otherwise
+- `variables: []` — only needed for non-prompt variable injection patterns
 
 **Start node data fields:**
 ```yaml
@@ -314,13 +329,11 @@ code: |
   def main(var1: str, var2: int) -> dict:
       return {"result": var1, "count": var2}
 code_language: python3
-outputs:
-  result:
-    children: null                  # REQUIRED — every output field must have children: null
-    type: string                    # string | number | boolean | object | array[string] | array[object]
-  count:
-    children: null
-    type: number
+outputs:                            # REQUIRED: always a LIST — never a dict
+  - type: string                    # string | number | boolean | object | array[string] | array[object]
+    variable: result                # must match the key returned by the function exactly
+  - type: number
+    variable: count
 retry_config:
   max_retries: 3
   retry_enabled: true
@@ -341,7 +354,7 @@ variables:                          # REQUIRED format — do NOT use "inputs:" d
 **Answer node data fields (chatflow terminal):**
 ```yaml
 type: answer
-answer: "{{#[llm_node_id].text#}}"
+answer: "{{#[template_transform_node_id].output#}}"   # reference template-transform output; only reference an llm node directly when no template-transform exists
 variables: []
 ```
 
@@ -424,6 +437,19 @@ variables:
     variable: items
 ```
 
+**When the template-transform node receives structured output from an LLM node**, use `structured_output` as the field name (not `output`) and add `value_type: object`:
+
+```yaml
+variables:
+  - value_selector:
+      - "[llm_node_id]"
+      - structured_output        # NOT "output" — the field the LLM node exposes
+    value_type: object           # required
+    variable: report_data        # user-chosen descriptive name; use as {{ report_data.field }} in Jinja2
+```
+
+Choose a descriptive `variable:` name (e.g., `kpi_report`, `analysis_result`) rather than a generic name like `data`.
+
 Template rendering notes:
 - Jinja2 syntax inside the template string: `{{ var }}` for output, `{% if %}`, `{% for %}` for logic
 - This is NOT the DSL variable reference syntax — do not use `{{# #}}` inside the template string
@@ -440,26 +466,28 @@ When an LLM node must return structured data (multiple named fields) that a down
 
 ```yaml
 structured_output:
-  properties:
-    field_name_1:
-      description: "What this field contains"
-      type: string
-    field_name_2:
-      description: "What this field contains"
-      type: number
-    items_list:
-      description: "Array of items"
-      items:
+  schema:
+    additionalProperties: false
+    type: object
+    properties:
+      field_name_1:
+        description: "What this field contains"
         type: string
-      type: array
-  required:
-    - field_name_1
-    - field_name_2
-  type: object
+      field_name_2:
+        description: "What this field contains"
+        type: number
+      items_list:
+        description: "Array of items"
+        items:
+          type: string
+        type: array
+    required:
+      - field_name_1
+      - field_name_2
 structured_output_enabled: true    # SIBLING to structured_output, NOT nested inside it
 ```
 
-When `structured_output_enabled: false`, set `structured_output: {}` (empty dict).
+When structured output is not needed, **omit both `structured_output` and `structured_output_enabled` entirely**. Do not write `structured_output: {}` or `structured_output_enabled: false`.
 
 Use `structured_output_enabled: true` when:
 - The LLM must extract 3+ named fields from text (use instead of parameter-extractor when LLM is already in the flow)
@@ -467,9 +495,83 @@ Use `structured_output_enabled: true` when:
 - The output feeds a code node that parses named fields
 - Reliable JSON output is critical (billing, forms, structured records)
 
+**Agent node data fields (requires Dify 1.7+):**
+
+All config lives inside `agent_parameters`. Every field uses a typed wrapper (`type: constant` or `type: variable`). The `schemas` array inside each tool is complex and plugin-specific — copy it verbatim from a real Dify export or from `skills/dify/assets/chatflows/agent-chatflow.yml`. Do not hand-craft schemas.
+
+```yaml
+type: agent
+agent_parameters:
+  # context is FULLY OPTIONAL — only include when a knowledge-retrieval node feeds this agent.
+  # If no knowledge retrieval node exists in the flow, omit the context key entirely.
+  # Do NOT set it to null or empty — just leave the key out.
+  context:
+    type: variable
+    value:
+    - "[knowledge_retrieval_node_id]"
+    - result
+  instruction:
+    type: constant
+    value: "[system prompt from prompt-engineer spec]"
+  maximum_iterations:
+    type: constant
+    value: 5                        # increase to 8–12 for multi-hop research tasks
+  model:
+    type: constant
+    value:
+      completion_params: {}
+      mode: chat
+      model: Claude-4-Sonnet      # PLACEHOLDER — same substitution rules as LLM nodes above
+      model_type: llm
+      provider: langgenius/openai_api_compatible/openai_api_compatible   # PLACEHOLDER
+      type: model-selector
+  query:
+    type: constant
+    value: '{{#sys.query#}}'        # always sys.query in chatflows
+  tools:
+    type: constant
+    value:
+    - enabled: true
+      extra:
+        description: "[tool description]"
+      parameters:
+        "[dynamic_param]":          # parameters the agent fills at runtime
+          auto: 1
+          value: null
+      provider_name: "[provider]"
+      provider_show_name: "[provider]"
+      schemas: [...]                # copy from real export — never hand-craft
+      settings: {}
+      tool_description: "[tool description]"
+      tool_label: "[Tool Label]"
+      tool_name: "[tool_name]"
+      type: builtin
+agent_strategy_label: FunctionCalling
+agent_strategy_name: function_calling
+agent_strategy_provider_name: langgenius/agent/agent
+memory:
+  query_prompt_template: '{{#sys.query#}}'
+  window:
+    enabled: false                  # set true to enable conversation memory; do not set size
+    size: 50
+meta:
+  minimum_dify_version: 1.7.0
+  version: 0.0.2
+output_schema: {}
+plugin_unique_identifier: langgenius/agent:0.0.37@a5dcc6ea00bca23439b49ff7d65704f3f5dd6ce2ca353205e62278e2148d84b6
+tool_node_version: '2'
+```
+
+**CRITICAL agent node rules:**
+
+- The answer node downstream must reference `{{#agent_node_id.text#}}` — NOT `.output` (that is the template-transform field)
+- Agent node height is `190` (taller than a standard node)
+- A `template-transform` node is NOT required between the agent and answer nodes — the agent produces formatted prose directly
+- Built-in tools (`webscraper`, `time`) need no `dependencies` entry; marketplace plugin tools do
+
 **Assigner node data fields (chatflow only — updates conversation variables):**
 ```yaml
-type: assigner
+type: variable-assigner
 assigned_variable_selector:
   - conversation
   - var_name
@@ -483,7 +585,7 @@ version: "2"
 write_mode: over-write
 ```
 
-### Step 7 — Build all edges
+### Step 6 — Build all edges
 
 **CRITICAL**: Edges must be listed BEFORE nodes in the `graph:` block.
 
@@ -512,13 +614,21 @@ Edge ID construction rule — follow this exactly:
 - HTTP fail: `"{source_id}-fail-branch-{target_id}-target"`
 - Iteration output: `"{source_id}-loop-{target_id}-target"`
 
-### Step 8 — Wire all variable references
+### Step 7 — Wire all variable references
 
 Every `{{#node_id.field_name#}}` reference in prompts, answer nodes, end nodes, and condition blocks must use node IDs that exist in the `nodes` list. Cross-check against the approved plan's variable flow map.
 
-### Step 9 — Add `dependencies` block if plugins are used
+### Step 8 — Build the `dependencies` block
 
-If the requirements brief lists any external services resolved to Dify marketplace plugins (i.e., the tool nodes come from the marketplace), include:
+The `dependencies` key MUST always be present at the top level — `validate_workflow.py` requires it and rejects files that omit it entirely.
+
+**If no marketplace plugins are used:**
+
+```yaml
+dependencies: []
+```
+
+**If one or more marketplace plugins are used** (i.e., the requirements brief resolved any external service to a Dify marketplace plugin and the plan contains `tool` nodes), include one entry per plugin:
 
 ```yaml
 dependencies:
@@ -528,9 +638,11 @@ dependencies:
       marketplace_plugin_unique_identifier: "[plugin_id]@[version]"
 ```
 
-If no plugins are used, omit the `dependencies` block entirely.
+Add additional list entries for each additional plugin. The `marketplace_plugin_unique_identifier` format is `author/plugin-name:version/plugin-name` — copy it from the plugin-finder output.
 
-### Step 10 — Run the format script
+Never omit `dependencies` even when the app has no tool nodes. Always write at minimum `dependencies: []`.
+
+### Step 9 — Run the format script
 
 After writing the initial YAML, run:
 
@@ -540,7 +652,7 @@ After writing the initial YAML, run:
 
 This normalizes indentation, field ordering, and whitespace to match Dify's expected format.
 
-### Step 11 — Write the YAML file
+### Step 10 — Write the YAML file
 
 Derive the project name from the `App name` in the requirements brief: convert to lowercase kebab-case (e.g., "Customer Support Bot" → `customer-support-bot`). This is both the folder name and the base filename.
 
@@ -563,7 +675,7 @@ Then state clearly:
 Written to: output/[project-name]/[project-name].yml
 ```
 
-### Step 12 — Write SETUP.md
+### Step 11 — Write SETUP.md
 
 After the YAML is written, generate `output/[project-name]/SETUP.md` with the following content. Fill in every section based on the requirements brief, the YAML you just wrote, and the pipeline context you received. Do not use placeholder text — every section must contain real, specific information about this project.
 
@@ -603,23 +715,61 @@ Install each plugin before importing the DSL. Missing plugins cause a "plugin no
 
 *Skip this step if the app has no knowledge-retrieval nodes.*
 
-[For each knowledge base:]
-1. Go to the **Knowledge** tab in the Dify top navigation
-2. Click **Create Knowledge Base** and name it: `[suggested name]`
-3. Upload all files from `knowledge/[subfolder]/` — you can select multiple files at once
-4. Follow the chunking and embedding settings in `knowledge/[subfolder]/UPLOAD-GUIDE.md`
-5. Wait for indexing to complete (all documents show green "Completed" status)
-6. Copy the Dataset ID from the browser URL: `…/datasets/[YOUR-DATASET-ID]/documents`
-   — you will need this in Step 4
+**Do this BEFORE importing the DSL.** The knowledge-retrieval node in the DSL has a placeholder dataset ID — you will connect it to the real knowledge base after import (see Step 3).
+
+[For each knowledge base in the app, write a concrete, non-placeholder version of these instructions. Fill in every bracket with real, specific content derived from the requirements brief and the app context. Do not leave any bracket as a placeholder.]
+
+### Knowledge Base: [KB Name]
+
+**Name:** `[Choose a short, memorable name that matches the data — e.g., "Product FAQ", "Company Policies", "API Documentation". The name will appear in the Dify UI and in retrieval citations.]`
+
+**Description:** `[Write 1–2 sentences describing what documents this KB contains and what questions it is designed to answer — e.g., "Contains product support FAQs, troubleshooting guides, and feature documentation for the Acme widget platform."]`
+
+#### Setup steps:
+
+1. In Dify, click the **Knowledge** tab in the top navigation bar
+2. Click **Create Knowledge Base**
+3. Enter the name and description above
+4. Upload your documents (PDF, DOCX, TXT, Markdown, HTML, CSV — multiple files at once is supported)
+
+**Indexing & chunking settings — choose based on your data type:**
+
+| Your data type | Chunk size | Chunk overlap | Index mode |
+| --- | --- | --- | --- |
+| Long prose (articles, manuals, reports) | 500 tokens | 50 tokens | High Quality (Embedding) |
+| Short FAQ / Q&A pairs | 200 tokens | 20 tokens | High Quality (Embedding) |
+| Structured tables or CSV | 300 tokens | 0 tokens | High Quality (Embedding) |
+| Code or technical docs | 200 tokens | 50 tokens | High Quality (Embedding) |
+| Mixed / general purpose | 500 tokens | 50 tokens | High Quality (Embedding) |
+
+5. Select **High Quality** index mode (uses an embedding model — required for semantic retrieval)
+6. Set chunk size and overlap based on the table above
+7. Click **Save & Process** and wait for all documents to show **✅ Completed** status
 
 ---
 
-## Step 3 — Import the DSL
+## Step 3 — Import the DSL and Connect the Knowledge Base
+
+### 3a — Import
 
 1. Go to Dify Studio (`app.dify.ai` or your self-hosted Dify URL)
 2. Click **Create App** → **Import DSL**
 3. Upload `[project-name].yml`
-4. Review the imported app on the canvas — all nodes should appear connected
+4. The app canvas opens — all nodes appear but the knowledge-retrieval node shows no dataset connected yet (this is expected)
+
+### 3b — Connect the knowledge base to the node
+
+After import, the knowledge-retrieval node on the canvas will be unconfigured. You must connect it manually:
+
+[For each knowledge-retrieval node in the app:]
+
+1. On the canvas, click the **[Knowledge Retrieval node title — e.g., "Knowledge Retrieval"]** node to open its settings panel
+2. In the **Datasets** section, click the **+** (Add) button
+3. A list of your knowledge bases appears — select **[KB Name from Step 2]**
+4. Confirm the selection — the node now shows the dataset name
+5. Click **Save** or close the panel
+
+Repeat for any additional knowledge-retrieval nodes if the app has more than one.
 
 ---
 
@@ -630,13 +780,6 @@ In the imported app go to **Settings → Environment Variables** and set:
 | Variable | Description | Where to get it |
 | --- | --- | --- |
 [For each env var: | `VAR_NAME` | What it is | Where to obtain the value |]
-
-[If knowledge bases are used:]
-Also set the Dataset ID(s) from Step 2:
-
-| Variable | Knowledge Base |
-| --- | --- |
-[| `DATASET_ID_[NAME]` | [kb name] |]
 
 *If no environment variables are needed, delete this step.*
 
@@ -727,7 +870,7 @@ Before presenting output to the user, confirm every item:
 **`workflow` block — all of these must be present or Dify crashes:**
 - [ ] `workflow.conversation_variables` is present (always `[]` for workflows)
 - [ ] `workflow.environment_variables` is present (always a list, even if empty)
-- [ ] `workflow.features` is present as a full block including `fileUploadConfig` with all 10 keys
+- [ ] `workflow.features` is present as a full block; if `fileUploadConfig` is included it must contain all 7 required keys: `audio_file_size_limit`, `batch_count_limit`, `file_size_limit`, `image_file_size_limit`, `single_chunk_attachment_limit`, `video_file_size_limit`, `workflow_file_upload_limit`
 - [ ] For chatflows: `features.opening_statement` is rich HTML (not empty `""`) — use the CONVERSATION SETUP from the node plan
 - [ ] For chatflows: `features.suggested_questions` contains 2–3 example inputs from the node plan
 - [ ] `workflow.rag_pipeline_variables: []` is the last key in the workflow block
@@ -739,10 +882,11 @@ Before presenting output to the user, confirm every item:
 **Nodes:**
 - [ ] All nodes from the approved plan are present with correct IDs, types, and positions
 - [ ] A `template-transform` node is present as the second-to-last node (before `answer` or `end`) — omit only if the plan explicitly noted a reason to skip it
-- [ ] Every LLM `prompt_template` entry has a unique `id` (UUIDv4) and `edition_type: basic`
-- [ ] Every LLM node has `variables: []`, `retry_config`, `structured_output: {}` (or full schema if enabled), and `structured_output_enabled: [true|false]`
+- [ ] Every LLM `prompt_template` entry has a unique `id` (UUIDv4), `role`, and `text` — no `edition_type` field
+- [ ] LLM nodes do NOT include `retry_config`, `variables: []`, or `structured_output`/`structured_output_enabled` unless structured output is actually used — when disabled, omit both fields entirely (do not write `structured_output: {}`)
+- [ ] When `structured_output` IS used: the schema lives at `structured_output.schema.properties` (not at `structured_output.properties` directly); `additionalProperties: false` appears at every object level
 - [ ] Every code node uses `variables:` array (NOT `inputs:` dict) for inputs
-- [ ] Every code node output field has `children: null`
+- [ ] Every code node `outputs:` is a LIST where each item has `type:` and `variable:` — never a dict, never missing `variable:`
 - [ ] End node `outputs` entries use `value_type:` (NOT `label:`)
 - [ ] Answer node references `{{#template_node_id.output#}}` (not raw LLM text) when a template-transform node is present
 - [ ] Answer node has `variables: []`
