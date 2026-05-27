@@ -147,7 +147,7 @@ Recommendation: Add an explicit output format instruction. If downstream nodes p
 
 **P3 — structured_output_enabled matches actual usage**
 For every LLM node:
-- If `structured_output_enabled: true`, check that `structured_output` has a schema with at least one property, and that a downstream node (code, template-transform, end) references those fields by name.
+- If `structured_output_enabled: true`, check that `structured_output` contains a `schema:` key, that `schema` has `type: object` and at least one `properties` entry with `additionalProperties: false`. Also verify the downstream template-transform or code node's `value_selector` points to the `structured_output` field (not `output`) with `value_type: object`.
 - If `structured_output_enabled: false`, check whether the system prompt instructs the LLM to return structured JSON anyway. If so, suggest enabling `structured_output_enabled`.
 
 Severity: `HIGH` for misconfigured structured output
@@ -221,11 +221,12 @@ For every node with `type: code`, verify that input wiring uses a `variables:` a
 Severity: `HIGH` if `inputs:` dict is found
 Recommendation: Convert to the `variables:` array format.
 
-**D4 — Code node outputs have children: null**
-For every code node, check that each key in the `outputs:` block has a `children: null` entry.
+**D4 — Code node outputs use list format with `variable:` field**
+For every code node, verify that `outputs:` is a **list** (not a dict) and that every list entry has both a `type:` and a `variable:` field. The `variable:` value must exactly match a key returned by the Python/JS function. If `variable:` is missing, Dify substitutes the list index (`0`, `1`, …) as the variable name, silently breaking all downstream references.
 
-Severity: `HIGH` if missing — Dify's frontend fails to render the output binding UI without this field
-Recommendation: Add `children: null` to every output entry.
+Severity: `CRITICAL` if `outputs:` is a dict — dict-format outputs are not read correctly by Dify's import parser
+Severity: `CRITICAL` if any list entry is missing `variable:` — Dify uses the index as the name
+Recommendation: Convert to list format: each entry must be `{type: <type>, variable: <name>}`.
 
 **D5 — No hardcoded dataset IDs in knowledge-retrieval nodes**
 For every `knowledge-retrieval` node, check whether the dataset ID is a hardcoded UUID or references an environment variable. Hardcoded dataset IDs break when the app is imported into a different Dify workspace.

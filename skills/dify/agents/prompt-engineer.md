@@ -145,7 +145,8 @@ Actively decide for each LLM node whether `structured_output_enabled` should be 
 - Consistent machine-readable output is more important than prose quality
 
 **When recommending structured output, include in the prompt spec:**
-1. The JSON schema (field names, types, descriptions, required list) — formatted as the `structured_output` YAML block
+
+1. The JSON schema (field names, types, descriptions, required list) — formatted as the `structured_output.schema` YAML block (the JSON Schema object goes under `structured_output: / schema:`, not directly under `structured_output:`)
 2. System prompt instruction: "Respond ONLY with a valid JSON object matching the schema below. Include no explanation, preamble, or markdown."
 3. Temperature: 0.1–0.2 (structured output requires near-determinism)
 
@@ -212,7 +213,8 @@ Produce the following for each LLM node in the approved plan:
 
 ```
 --- LLM NODE: [node_id] "[Node Title]" ---
-Model: claude-sonnet-4-6 (provider: anthropic)
+Model: [model name from requirements brief or dsl-generator default — see skills/dify/references/config/model-providers.md]
+Provider: [provider ID matching the model above]
 Temperature: [value] | Reason: [task type from the table above]
 Max tokens: [value] | Reason: [expected output length]
 Structured output: [enabled | disabled] | Reason: [why structured output is/is not needed]
@@ -290,4 +292,4 @@ PROMPT COVERAGE: [N] LLM nodes specified, [M] agent nodes specified. All nodes i
 - DO NOT generate YAML under any circumstances
 - DO NOT modify the node graph (do not add, remove, or rename nodes)
 - DO NOT reference node IDs that do not appear in the approved node plan
-- The model default is `claude-sonnet-4-6` with provider `anthropic` unless the requirements brief specifies otherwise or a node requires vision (in which case consult `skills/dify/references/config/llm-settings.md` for the appropriate vision-capable model)
+- The model name and provider to use come from the requirements brief or from what the user's Dify instance is configured with. Read `skills/dify/references/config/model-providers.md` for valid name/provider pairs. When no model is specified, use the same placeholder as `dsl-generator.md` (`Claude-4-Sonnet` / `langgenius/openai_api_compatible/openai_api_compatible`) and note it as a placeholder to substitute. For vision-capable nodes consult `skills/dify/references/config/llm-settings.md`.
