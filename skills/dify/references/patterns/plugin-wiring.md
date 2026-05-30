@@ -253,7 +253,6 @@ workflow:
           desc: "Synthesize the search results into a concise, accurate summary."
           model:
             completion_params:
-              max_tokens: 1024
               temperature: 0.3
             mode: chat
             name: gpt-4o-mini
@@ -449,7 +448,6 @@ workflow:
           desc: "Extract the requested information from the scraped page content."
           model:
             completion_params:
-              max_tokens: 2048
               temperature: 0.2
             mode: chat
             name: gpt-4o-mini
@@ -628,7 +626,6 @@ workflow:
           desc: "Rewrite the user's description into a detailed, high-quality image generation prompt."
           model:
             completion_params:
-              max_tokens: 512
               temperature: 0.7
             mode: chat
             name: gpt-4o-mini

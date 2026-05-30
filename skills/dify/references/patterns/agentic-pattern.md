@@ -202,7 +202,6 @@ workflow:
           desc: "Search the web autonomously to answer the user's question."
           model:
             completion_params:
-              max_tokens: 2048
               temperature: 0.5
             mode: chat
             name: gpt-4o-mini
@@ -374,7 +373,6 @@ workflow:
           desc: "Search and scrape the web to gather comprehensive information."
           model:
             completion_params:
-              max_tokens: 4096
               temperature: 0.3
             mode: chat
             name: gpt-4o
@@ -436,7 +434,6 @@ workflow:
           desc: "Synthesize raw research findings into a structured report."
           model:
             completion_params:
-              max_tokens: 3000
               temperature: 0.2
             mode: chat
             name: gpt-4o

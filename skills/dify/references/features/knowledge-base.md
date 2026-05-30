@@ -21,7 +21,7 @@ Files are chunked, embedded, and indexed automatically after upload.
 Provide a URL and Dify will crawl and sync the page (or site) on a schedule. Useful for keeping documentation knowledge bases current. Requires enabling the Jina Reader or Firecrawl plugin for content extraction.
 
 ### 3. API Ingestion
-POST documents programmatically via the Dify Knowledge Base API. Use this to build automated pipelines that push content from your CMS, database, or other systems into Dify on a schedule.
+POST documents programmatically via the Dify Knowledge Base (Dataset) API. Use this to build automated pipelines that push content from your CMS, database, uploaded files, or other systems into Dify on a schedule. A Dify **workflow** can do this itself using `http-request` nodes — see **Writing to a Knowledge Base via the Dataset API** below and the full pattern in `skills/dify/references/patterns/knowledge-base-ingestion.md`.
 
 ---
 
@@ -140,6 +140,42 @@ Build an ingestion job that queries your source system and pushes updates via th
 
 ---
 
+## Writing to a Knowledge Base via the Dataset API
+
+There is **no native "write to KB" node** in Dify. To create or update KB content from inside a
+workflow, call the **Dataset API** from `http-request` nodes (shaping payloads in `code` nodes).
+This is the basis of the ingestion pattern — see `skills/dify/references/patterns/knowledge-base-ingestion.md`
+for the full design (mode selection, delimiter selection, the idempotent upsert topology, env vars,
+and SETUP guidance). This section is the field/endpoint reference.
+
+**Core write endpoints** (auth: `Authorization: Bearer <dataset-api-key>`; dataset id in path):
+
+| Operation | Method + path |
+| --- | --- |
+| List documents | `GET /datasets/{dataset_id}/documents` |
+| Create document from text | `POST /datasets/{dataset_id}/document/create-by-text` |
+| Create document from file | `POST /datasets/{dataset_id}/document/create-by-file` |
+| List segments (paginate on `has_more`) | `GET /datasets/{dataset_id}/documents/{document_id}/segments` |
+| Create segment(s) | `POST /datasets/{dataset_id}/documents/{document_id}/segments` |
+| Update a segment | `POST /datasets/{dataset_id}/documents/{document_id}/segments/{segment_id}` |
+
+**The three `doc_form` chunking modes** — a document's `doc_form` must match how the KB was created:
+
+| Mode | `doc_form` | `process_rule.mode` | Segmentation fields | Choose when |
+| --- | --- | --- | --- | --- |
+| General / Standard | `text_model` | `custom` | `segmentation {separator, max_tokens, chunk_overlap}` | Each chunk is self-contained and is both matched and returned |
+| Parent-child / Hierarchical | `hierarchical_model` | `hierarchical` | `parent_mode` + `segmentation` (parent) + `subchunk_segmentation` (child) | Match unit (child) is smaller than the context unit (parent) |
+| Q&A | `qa_model` | `custom` (+ `doc_language`) | `segmentation` between pairs | Content is question→answer shaped |
+
+**Delimiter choice is data-driven, not fixed.** For parent-child: the parent separator marks the
+boundary of what should be *returned* as context; the child separator marks the smallest unit the
+query should *match*. Derive both from the structure of the extracted text — see the pattern doc's
+delimiter-selection rules. **Do not default to one mode or one separator.**
+
+Updating a parent segment's `content` (hierarchical mode) regenerates its child chunks on re-index.
+
+---
+
 ## External Knowledge Base Connection
 
 Dify supports connecting to an external knowledge base via a custom API endpoint. Instead of Dify managing the vector store, your system hosts the retrieval logic and Dify calls your endpoint at query time.
@@ -226,4 +262,4 @@ context:
     - result
 ```
 
-See `skills/dify/references/nodes/knowledge-retrieval.md` for the full node configuration reference and `skills/dify/references/patterns/rag-pipeline.md` for end-to-end RAG workflow examples.
+See `skills/dify/references/nodes/knowledge-retrieval.md` for the full node configuration reference and `skills/dify/references/patterns/rag-pattern.md` for end-to-end RAG workflow examples.

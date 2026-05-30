@@ -4,7 +4,7 @@ fix_assets.py — One-shot script to bring all asset YAML files up to spec.
 Fixes applied:
   1. LLM nodes: add 'id' (UUID) to each prompt_template entry missing one
   2. Code nodes: convert old 'inputs' dict to 'variables' list format
-  3. Add 'children: null' to code node outputs that are missing it
+  3. Code nodes: convert old list-format 'outputs' to dict/mapping keyed by variable name (type + children: null)
 
 Run once from project root:
     .venv/Scripts/python skills/dify/scripts/fix_assets.py
@@ -54,13 +54,28 @@ def _fix_code_node(data: dict) -> bool:
         data["variables"] = variables
         changed = True
 
-    # Add 'children: null' to outputs missing it
-    outputs = data.get("outputs", {})
-    if isinstance(outputs, dict):
-        for out_name, out_val in outputs.items():
-            if isinstance(out_val, dict) and "children" not in out_val:
-                out_val["children"] = None
-                changed = True
+    # Convert old list-format outputs -> dict/mapping keyed by variable name (with children: null)
+    outputs = data.get("outputs")
+    if isinstance(outputs, list):
+        new_outputs = {}
+        for entry in outputs:
+            if isinstance(entry, dict) and entry.get("variable"):
+                new_outputs[entry["variable"]] = {
+                    "type": entry.get("type", "string"),
+                    "children": None,
+                }
+        data["outputs"] = new_outputs
+        changed = True
+    elif isinstance(outputs, dict):
+        # Already the correct shape; ensure each entry has type + children: null
+        for spec in outputs.values():
+            if isinstance(spec, dict):
+                if "children" not in spec:
+                    spec["children"] = None
+                    changed = True
+                if "type" not in spec:
+                    spec["type"] = "string"
+                    changed = True
     return changed
 
 

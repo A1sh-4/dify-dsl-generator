@@ -113,12 +113,15 @@ workflow:
         code_language: python3
         desc: Parses the JSON webhook payload and extracts key fields
         outputs:
-        - type: string
-          variable: event_type
-        - type: string
-          variable: sender
-        - type: string
-          variable: payload_summary
+          event_type:
+            type: string
+            children: null
+          sender:
+            type: string
+            children: null
+          payload_summary:
+            type: string
+            children: null
         selected: false
         title: Parse Webhook Payload
         type: code
@@ -143,11 +146,10 @@ workflow:
         desc: Analyzes the webhook event and produces a structured summary
         model:
           completion_params:
-            max_tokens: 1024
             temperature: 0.3
           mode: chat
-          name: claude-sonnet-4-6
-          provider: anthropic
+          name: Claude-4-Sonnet
+          provider: langgenius/openai_api_compatible/openai_api_compatible
         prompt_template:
         - role: system
           text: You are an automation assistant. Analyze incoming webhook events and

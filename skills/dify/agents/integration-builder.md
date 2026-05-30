@@ -24,7 +24,11 @@ Read these files before building any YAML:
 
 - `skills/dify/references/nodes/http.md` — authoritative HTTP node field reference: auth types, body types, header structure, param structure, timeout and retry fields, error_strategy values, and output variables
 - `skills/dify/references/nodes/code.md` — Code node field reference: sandbox restrictions, required `main` function signature, input/output variable declaration, allowed libraries
-- `skills/dify/references/patterns/error-handling.md` — fail-branch pattern: how success and fail-branch edges are structured, the `error-handle` sourceHandle value, how the fail path converges with a variable-aggregator
+- `skills/dify/references/patterns/error-handling.md` — fail-branch pattern: how success and fail-branch edges are structured, the `fail-branch` sourceHandle value, how the fail path converges with a variable-aggregator
+- `skills/dify/references/patterns/plugin-wiring.md` — if the integration uses a Dify marketplace plugin (`tool` node) rather than a raw HTTP node: exact `provider_id`/`provider_name`/`tool_name` wiring, plugin auth/credentials, and the required `dependencies` block
+- `skills/dify/references/api/calling-dify-from-http.md` — if the HTTP node calls **Dify's own API** (e.g., to add/update a knowledge-base document, or invoke another Dify app): the `{{#env.DIFY_BASE_URL#}}` base URL pattern, API-key auth header, and request shapes
+- `skills/dify/references/api/dify-api-reference.md` — endpoint reference for Dify's own REST API (app invocation, conversations, and Knowledge Base management) when building those HTTP nodes
+- `skills/dify/references/api/webhook-integration.md` — if the integration **delivers results to an external webhook** (outbound): payload format and signature/auth conventions
 
 Read these before writing any YAML. The HTTP node schema is specific — incorrect field names cause import failures.
 

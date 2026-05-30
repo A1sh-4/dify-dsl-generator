@@ -26,8 +26,10 @@ The Trigger-Webhook node replaces the Start node. It receives the incoming HTTP 
 4. Dify generates a unique webhook URL in this format:
 
 ```
-https://api.dify.ai/v1/workflows/webhook/{workflow_id}/{webhook_path}
+https://<your-dify-domain>/v1/workflows/webhook/{workflow_id}/{webhook_path}
 ```
+
+For this project's instance: `https://app-human04s.tsunagi.ai/v1/workflows/webhook/{workflow_id}/{webhook_path}`
 
 5. Copy this URL and paste it into your external system's webhook configuration screen (GitHub repo settings, Stripe dashboard, Typeform integrations, etc.).
 
@@ -51,7 +53,7 @@ Inside the node's settings panel you can configure:
 A typical webhook POST from a system like GitHub looks like this:
 
 ```
-POST https://api.dify.ai/v1/workflows/webhook/{id}/{path}
+POST https://<your-dify-domain>/v1/workflows/webhook/{id}/{path}
 Content-Type: application/json
 X-Hub-Signature-256: sha256=abc123...
 X-GitHub-Event: push

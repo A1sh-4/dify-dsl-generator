@@ -64,9 +64,9 @@ For every node identified in Step 1, assign exactly one strategy from the follow
 
 | Node Type | Recommended Strategy | Retry Config | Reason |
 |---|---|---|---|
-| HTTP node (external API) | retry + fail-branch | max_retries: 2, retry_interval: 2000ms | APIs fail transiently; retries resolve most transient issues; fail-branch for persistent failures |
+| HTTP node (external API) | retry + fail-branch | max_retries: 3, retry_interval: 1000ms | APIs fail transiently; retries resolve most transient issues; fail-branch for persistent failures |
 | Tool / plugin node | fail-branch | — | Plugin availability issues are rarely transient; retry wastes time |
-| LLM node (critical path) | retry | max_retries: 2, retry_interval: 3000ms | Rate limits recover within seconds; 3s interval gives the provider time to reset |
+| LLM node (critical path) | retry | max_retries: 3, retry_interval: 1000ms | Rate limits recover within seconds |
 | LLM node (non-critical) | default-value | — | Save retry budget for critical paths; return a neutral fallback value |
 | Code node | default-value | — | Code errors are deterministic; retrying produces the same error |
 | Knowledge-retrieval node | default-value (empty list) | — | No results is a normal condition, not a crash; handle in the LLM prompt |
@@ -198,8 +198,9 @@ ERROR HANDLER PROMPTS:
   [... repeat for each error handler node ...]
 
 RETRY CONFIGURATION SUMMARY:
-  HTTP / Tool nodes:  max_retries: 2 | retry_interval: 2000ms
-  LLM nodes:          max_retries: 2 | retry_interval: 3000ms
+  HTTP nodes:         max_retries: 3 | retry_interval: 1000ms
+  LLM nodes:          max_retries: 3 | retry_interval: 1000ms
+  Tool / Plugin:      no retry (fail-branch only)
   Code / Retrieval:   no retry (default-value strategy)
 
 Updated node count: [original N] + [additional M error handlers] + [1 aggregator if new] = [total] nodes

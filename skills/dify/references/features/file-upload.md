@@ -1,6 +1,6 @@
 # File Upload
 
-Dify supports file upload in chatflows and workflows, enabling users to submit documents and images for processing. Files can be analyzed by vision-capable LLMs, extracted by doc-extractor nodes, or used in list-processing patterns.
+Dify supports file upload in chatflows and workflows, enabling users to submit documents and images for processing. Files can be analyzed by vision-capable LLMs, extracted by document-extractor nodes, or used in list-processing patterns.
 
 ---
 
@@ -64,7 +64,7 @@ The following image formats are supported for vision processing:
 - `svg`
 
 ### Document Types (for Text Extraction)
-The following document formats are supported via the doc-extractor node:
+The following document formats are supported via the document-extractor node:
 - `pdf` — PDF documents (text layer extracted; scanned PDFs may require OCR)
 - `docx` / `doc` — Microsoft Word documents
 - `xls` / `xlsx` — Microsoft Excel spreadsheets
@@ -143,7 +143,7 @@ The LLM node receives the image alongside the text prompt and generates a respon
 
 ## Passing Files to Doc-Extractor Node
 
-For text extraction from documents (PDF, DOCX, etc.), use the **doc-extractor** node:
+For text extraction from documents (PDF, DOCX, etc.), use the **document-extractor** node:
 
 ```yaml
 - data:
@@ -230,7 +230,7 @@ Both can be enabled simultaneously to give users the choice.
 
 ## Related Documentation
 
-- See `skills/dify/references/nodes/doc-extractor.md` for the doc-extractor node full configuration reference.
+- See `skills/dify/references/nodes/document-extractor.md` for the document-extractor node full configuration reference.
 - See `skills/dify/references/nodes/list-operator.md` for filtering and sorting file arrays before iteration.
 - See `skills/dify/references/nodes/iteration.md` for the iteration node, including the `{{item}}` variable syntax.
 - See `skills/dify/references/features/chatflow-features.md` for the complete `features` block DSL reference.

@@ -76,77 +76,71 @@ The variable-aggregator node merges outputs from both branches into one variable
 
 ## Complete YAML Example
 
-This example checks whether an LLM's output contains the word "urgent" and routes to an escalation path if found:
+Real Dify export structure — if-else node that checks whether a select input equals "code":
 
 ```yaml
-nodes:
-  - id: check_urgency
-    type: if-else
-    data:
-      title: Check for Urgent Content
-      logical_operator: and
+- data:
+    cases:
+    - case_id: 'true'
       conditions:
-        - variable_selector:
-            - llm_node
-            - text
-          comparison_operator: contains
-          value: urgent
-
-  - id: escalate
-    type: llm
-    data:
-      title: Generate Escalation Response
-      prompt_template:
-        - role: user
-          text: |
-            This message requires urgent attention:
-            {{#llm_node.text#}}
-            
-            Generate an escalation notification.
-
-  - id: standard_response
-    type: answer
-    data:
-      answer: "{{#llm_node.text#}}"
-
-  - id: aggregate_response
-    type: variable-aggregator
-    data:
-      variables:
-        - - escalate
-          - text
-        - - standard_response
-          - answer
-
-edges:
-  - source: check_urgency
-    target: escalate
-    sourceHandle: "true"
-  - source: check_urgency
-    target: standard_response
-    sourceHandle: "false"
-  - source: escalate
-    target: aggregate_response
-  - source: standard_response
-    target: aggregate_response
+      - comparison_operator: is
+        id: 11928117-9311-43f3-ae7c-22fd5775b09c   # UUIDv4 per condition
+        value: code
+        varType: string                              # matches the variable's data type
+        variable_selector:
+        - '1718002000001'   # node ID of the upstream node
+        - input_type        # field name on that node
+      id: 'true'            # same value as case_id — both fields are required
+      logical_operator: and
+    selected: false
+    title: Route by Input Type
+    type: if-else
+  height: 124
+  id: '1718002000002'
+  position:
+    x: 379
+    y: 303
+  positionAbsolute:
+    x: 379
+    y: 303
+  selected: false
+  sourcePosition: right
+  targetPosition: left
+  type: custom
+  width: 243
 ```
+
+**Critical structural rules (from real Dify exports):**
+
+- The top-level key inside `data` is `cases` (not `conditions`)
+- Only the **true** cases are listed — the false/else branch is implicit and never appears as a case entry
+- Each case needs **both** `case_id` and `id` fields set to the same value (`'true'`, `'1'`, `'2'`, etc.)
+- Each condition requires three extra fields beyond `variable_selector`/`comparison_operator`/`value`:
+  - `id` — a UUIDv4, unique per condition
+  - `varType` — the data type of the variable being tested (`string`, `number`, `array[string]`, etc.)
+- `logical_operator: and` lives on the **case** object, not at the top level of `data`
 
 ## Pattern: Content-Based Routing
 
-Route based on what an LLM produced:
+Route based on a select variable value:
 
 ```yaml
-- id: check_language
-  type: if-else
-  data:
+- data:
+    cases:
+    - case_id: 'true'
+      conditions:
+      - comparison_operator: is
+        id: a1b2c3d4-0000-0000-0000-000000000001
+        value: fr
+        varType: string
+        variable_selector:
+        - '[start_node_id]'
+        - language
+      id: 'true'
+      logical_operator: and
+    selected: false
     title: Check Response Language
-    logical_operator: and
-    conditions:
-      - variable_selector:
-          - start
-          - language
-        comparison_operator: is
-        value: "fr"
+    type: if-else
 ```
 
 ## Pattern: Threshold-Based Routing
@@ -154,17 +148,22 @@ Route based on what an LLM produced:
 Route based on a numeric score:
 
 ```yaml
-- id: confidence_check
-  type: if-else
-  data:
+- data:
+    cases:
+    - case_id: 'true'
+      conditions:
+      - comparison_operator: '>='
+        id: b2c3d4e5-0000-0000-0000-000000000001
+        value: '0.75'
+        varType: number
+        variable_selector:
+        - '[retrieval_node_id]'
+        - score
+      id: 'true'
+      logical_operator: and
+    selected: false
     title: Check Confidence Score
-    logical_operator: and
-    conditions:
-      - variable_selector:
-          - retrieval_node
-          - result[0].score
-        comparison_operator: ">="
-        value: "0.75"
+    type: if-else
 ```
 
 ## Common Mistakes

@@ -60,11 +60,11 @@ The App API Key grants access only to this specific app, not the entire workspac
 
 ### Endpoint URL
 ```
-https://api.dify.ai/v1
+https://<your-dify-domain>/v1
 ```
-Self-hosted:
+For this project's self-hosted instance:
 ```
-https://your-dify-instance.com/v1
+https://app-human04s.tsunagi.ai/v1
 ```
 
 ### Key API Endpoints
@@ -172,11 +172,13 @@ Dify provides a JavaScript chat widget that can be injected into any web page:
 <script>
   window.difyChatbotConfig = {
     token: '<app-api-key>',
-    baseUrl: 'https://api.dify.ai'
+    baseUrl: 'https://<your-dify-domain>'
   }
 </script>
-<script src="https://cloud.dify.ai/embed.min.js" defer></script>
+<script src="https://<your-dify-domain>/embed.min.js" defer></script>
 ```
+
+For this project's self-hosted instance, replace `<your-dify-domain>` with `app-human04s.tsunagi.ai`. Self-hosted instances serve the embed script from their own domain, not from `cloud.dify.ai`.
 
 The widget renders a floating chat bubble on the page. Clicking it opens the chat interface.
 

@@ -634,6 +634,39 @@ class TestCodeNode:
         d = self._flow_with_code(code_data)
         assert _v(d) == []
 
+    def test_old_list_outputs_flagged(self):
+        # the old list format is no longer accepted - code-node outputs must be a dict
+        code_data = {
+            "code": "def main() -> dict:\n    return {'out': 'x'}",
+            "code_language": "python3",
+            "variables": [],
+            "outputs": [{"type": "string", "variable": "out"}],
+        }
+        d = self._flow_with_code(code_data)
+        errors = _v(d)
+        assert any("list" in e.lower() for e in errors)
+
+    def test_invalid_output_type_flagged(self):
+        code_data = {
+            "code": "def main() -> dict:\n    return {'out': 'x'}",
+            "code_language": "python3",
+            "variables": [],
+            "outputs": {"out": {"type": "str", "children": None}},  # 'str' is not a valid type
+        }
+        d = self._flow_with_code(code_data)
+        errors = _v(d)
+        assert any("invalid type" in e for e in errors)
+
+    def test_array_object_output_valid(self):
+        code_data = {
+            "code": "def main() -> dict:\n    return {'rows': []}",
+            "code_language": "python3",
+            "variables": [],
+            "outputs": {"rows": {"type": "array[object]", "children": None}},
+        }
+        d = self._flow_with_code(code_data)
+        assert _v(d) == []
+
 
 # ===========================================================================
 # Check 14b — end node outputs use value_type not label

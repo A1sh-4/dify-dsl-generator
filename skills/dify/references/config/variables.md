@@ -1,5 +1,7 @@
 # Variables Reference
 
+> **Scope of this doc vs. `schema/variable-syntax.md`:** This file is the authority on the **five variable *types*** (input / node-output / environment / conversation / system) — how to *declare* them in node config, supported type strings, naming rules, and the type-compatibility matrix. For the **reference syntax mechanics** — how to *write* a `{{#node_id.field#}}` reference, scope rules, nested/array access, the DSL-vs-Jinja2 distinction, and common reference mistakes — see `skills/dify/references/schema/variable-syntax.md`. The two are complementary; the duplicated system-variables table is kept in both for convenience, but `variable-syntax.md` is canonical for syntax and this doc is canonical for types and declaration.
+
 ## Overview
 
 Dify DSL workflows use five distinct variable types to pass data between nodes, carry user input, persist state, reference secrets, and access system-provided context. Each type has its own syntax, lifecycle, and appropriate use cases. Understanding all five — and when to use each — is fundamental to building robust Dify workflows.

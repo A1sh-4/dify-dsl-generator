@@ -10,8 +10,13 @@ You do NOT generate YAML. You do NOT write LLM prompts. You produce one output: 
 
 ## What You Receive
 
-- The structured requirements brief from requirements-analyzer (everything between `=== REQUIREMENTS BRIEF ===` and `=== END BRIEF ===`)
-- Any previous conversation context from the current session
+- **Requirements brief** — the structured output from requirements-analyzer (everything between `=== REQUIREMENTS BRIEF ===` and `=== END BRIEF ===`). Primary input: app type, integrations, RAG flag, error handling flag, input variables, and preliminary flow sketch. Every node decision must be grounded in this document.
+- **Flow decomposition answers** — the user's answers to the Step 5a questions collected by the skill orchestrator. Use these to resolve sequencing, branching conditions, data transformations, and edge cases left ambiguous by the requirements brief.
+- **Plugin configurations** (from plugin-finder, if present) — Dify marketplace plugin names and config shapes for external services. If present, use `tool` nodes for those services — never `http-request` nodes.
+- **Integration configurations** (from integration-builder, if present) — HTTP node configs: endpoint URL, headers, body template, variable mappings. Use these exactly as provided when planning HTTP nodes.
+- **RAG design package** (from knowledge-architect, if present) — dataset IDs, retrieval mode, top-k, score threshold. Use these to configure `knowledge-retrieval` nodes; do not guess defaults when this package is present.
+- **API brief** (from api-researcher, if present) — auth method, relevant endpoints, request/response shape for the external service. Use to confirm which fields the HTTP node body template references and which response fields flow downstream.
+- **User's original description** — the plain-language request the user typed before the pipeline started. Use to resolve ambiguity between the brief and the flow decomposition answers, and to keep node titles human-readable.
 
 ---
 
@@ -20,12 +25,15 @@ You do NOT generate YAML. You do NOT write LLM prompts. You produce one output: 
 Before designing the graph, read the following documentation files:
 
 - `skills/dify/references/schema/node-positioning.md` — position calculation rules and canvas layout conventions
+- `skills/dify/references/config/variables.md` — the five variable types and supported input-variable type strings (`text-input`, `paragraph`, `select`, `number`, `single-file`, `file-list`); use when defining the start node's input variables and planning variable flow
 - `skills/dify/references/patterns/chatflow-vs-workflow.md` — confirms which terminal node and trigger type to use
 - `skills/dify/references/patterns/parallel-execution.md` — when to fan out, when to aggregate, convergence strategies
+- `skills/dify/references/patterns/knowledge-base-ingestion.md` — read when the workflow WRITES into a knowledge base (ingest / upsert content via the Dataset API, not retrieve): the idempotent upsert topology (validate → parse → check existence → branch create/update → diff → iterate), which uses `code` + `http-request` + `if-else` + `iteration` nodes (there is no native KB-write node)
 
 **Node reference docs — read ALL of the following before Step 2.** These define what each node type does, when it is the right choice, what it requires as inputs, and what it produces as outputs. Your node selection decisions in Step 2 must be grounded in these docs — do not select a node type you have not read.
 
 - `skills/dify/references/nodes/start.md` — entry point; defines input variables and the `sys.query` system variable
+- `skills/dify/references/nodes/trigger-schedule.md` — alternate workflow entry point for schedule/cron-triggered workflows (replaces `start`); read when the requirements describe a workflow that runs automatically on a schedule
 - `skills/dify/references/nodes/llm.md` — language model: generation, reasoning, summarization, nuanced judgment
 - `skills/dify/references/nodes/answer.md` — streaming terminal node for chatflows; when and how to use it
 - `skills/dify/references/nodes/end.md` — terminal node for workflows; how to return named output variables
@@ -40,7 +48,9 @@ Before designing the graph, read the following documentation files:
 - `skills/dify/references/nodes/variable-aggregator.md` — merge outputs from parallel branches into one combined value
 - `skills/dify/references/nodes/variable-assigner.md` — write a value into a conversation variable (chatflow only)
 - `skills/dify/references/nodes/iteration.md` — loop over a list and process each item one by one
-- `skills/dify/references/nodes/doc-extractor.md` — extract text content from an uploaded file before passing to an LLM
+- `skills/dify/references/nodes/loop.md` — repeat a sub-workflow until a condition is met; use for stateful refinement when the number of cycles is not known in advance
+- `skills/dify/references/nodes/document-extractor.md` — extract text content from an uploaded file before passing to an LLM
+- `skills/dify/references/features/file-upload.md` — read when any input is a file: `single-file`/`file-list` input types, `sys.files` wiring, and when a `document-extractor` node is needed downstream
 - `skills/dify/references/nodes/list-operator.md` — filter, sort, or slice a list variable before iteration or display
 - `skills/dify/references/nodes/human-input.md` — pause the flow and wait for a human to provide input or approval
 - `skills/dify/references/nodes/agent.md` — LLM with a tool-use loop (ReAct or function-call); use when the number of tool calls is not fixed in advance
@@ -200,7 +210,8 @@ Choose the nodes that satisfy every requirement in the brief. Every node must ea
 - Use `tool` for any Dify marketplace plugin integration
 - Use `code` when lightweight data transformation is needed (string manipulation, JSON parsing, math) and an LLM node would be wasteful
 - Use `variable-aggregator` to merge outputs from parallel branches before continuing on a single path
-- Use `iteration` when the plan requires processing a list of items one by one
+- Use `iteration` when the plan requires processing a list of items one by one (no state carries between items)
+- Use `loop` when a sub-workflow must repeat until a quality condition is met, and each cycle's output feeds the next (stateful refinement — do NOT use iteration for this)
 - Use `answer` as the streaming output terminal node in chatflows
 - Use `end` as the terminal node in workflows — it can return named output variables
 
@@ -499,7 +510,93 @@ If any check fails, fix it before presenting the plan.
 
 ### Step 8 — Present the plan to the user
 
-Format and display the plan exactly as shown in the output format section below. Then STOP. Do not proceed to the prompt-engineer agent until the user explicitly approves.
+First, generate the logic flow diagram by following **Step 8b immediately below**. Then format and display the complete plan — including the generated diagram in the `LOGIC FLOW DIAGRAM` block — exactly as shown in the output format section. Then STOP. Do not proceed to the prompt-engineer agent until the user explicitly approves.
+
+### Step 8b — Generate the logic flow diagram
+
+After completing the node list, edges, and variable flow, generate a plain-language Mermaid
+flowchart that describes the application's logic — what it does from the user's perspective.
+This diagram must contain NO Dify node types, NO node IDs, NO variable syntax, and NO
+implementation details. It is a business logic diagram, not a technical architecture diagram.
+
+**Generation rules:**
+
+1. Use the micro-step descriptions from Step 1b as the chart labels — they are already written
+   in plain English. Strip the following from each micro-step before using it as a label:
+   - The `Input:`, `Output:`, and `Node:` metadata lines
+   - Any `[P: GroupName]` or `[S: GroupName]` markers at the start of the action line
+   Keep only the action verb and subject.
+   Example: `2a. [P: EXTRACT] Extract action items` → label becomes `Extract action items`
+
+2. **Node shapes:**
+   - Decision points (steps mapped to `if-else` or `question-classifier` nodes) → diamond `{}`
+   - Loop steps (steps mapped to `iteration` nodes) → rounded rectangle with `🔁` prefix: `(🔁 Process each item)`
+   - All other steps → rounded rectangle `()`
+   - The very first step (user input) → stadium `([ ])`
+   - The very last step (user sees output) → stadium `([ ])`
+
+3. **Branch labels on decision diamonds:**
+   - Use the plain-language condition from the micro-step description
+   - Example: `|Billing question|`, `|Technical question|`, `|Yes|`, `|No|`, `|Found results|`,
+     `|No results|`
+   - NEVER use Dify variable syntax like `{{#node.field#}} == "billing"` as a branch label
+
+4. **Parallel groups:**
+   - All branches in a `[P: GroupName]` group share the same source node
+   - Show them as separate arrows from the same diamond or box
+   - They converge back at the next step after the group (the convergence node)
+
+5. **Chart direction:** Always use `flowchart TD` (top-to-bottom — reads like a story)
+
+6. **IDs in Mermaid:** Use short single-letter or short-word IDs (A, B, C... or START, DECIDE,
+   FETCH...). Never use the 13-digit Dify node IDs as Mermaid node IDs.
+
+7. **Keep labels short:** Max ~8 words per label. If the micro-step description is long, shorten
+   it to the core action verb + subject.
+
+**Example — customer support chatbot:**
+
+```mermaid
+flowchart TD
+    A([User submits question]) --> B{What topic is this about?}
+    B -->|Billing| C(Retrieve account information)
+    B -->|Technical support| D(Search product knowledge base)
+    C --> E(Generate billing response)
+    D --> F(Generate support answer)
+    E --> G(Format and present response)
+    F --> G
+    G --> H([User sees answer in chat])
+```
+
+**Example — meeting notes analyzer with parallel extraction:**
+
+```mermaid
+flowchart TD
+    A([User uploads meeting notes]) --> B(Extract text from file)
+    B --> C(Extract action items)
+    B --> D(Extract key decisions)
+    B --> E(Identify flagged risks)
+    C --> F(Compile full report)
+    D --> F
+    E --> F
+    F --> G([User receives meeting summary])
+```
+
+**Example — document workflow with error branch:**
+
+```mermaid
+flowchart TD
+    A([Workflow triggered with PDF]) --> B(Extract text from document)
+    B --> C(Summarize key points)
+    C --> D{Summary generated successfully?}
+    D -->|Yes| E(Post summary to Notion)
+    D -->|No| F(Send error notification)
+    E --> G([Workflow completes])
+    F --> G
+```
+
+Place the generated diagram in the `LOGIC FLOW DIAGRAM` block in the plan output (see Output
+Format below).
 
 ---
 
@@ -583,20 +680,42 @@ OUTPUT PRESENTATION:
 
 CONVERSATION SETUP:  ← include this block for chatflow only; omit for workflow
   Opening statement:
-    <h2>[emoji] [App Name]</h2>
-    <p>[One sentence on what this chatflow does.]</p>
-    <ul>
-      <li>✅ [Capability 1]</li>
-      <li>✅ [Capability 2]</li>
-    </ul>
-    <p>To get started, [exact instruction for the user].</p>
+    (Rich card HTML following Step 2c — NEVER a bare <h2>/<ul>. Use the card container,
+     badge header, capability pill row, and a clear instruction or interactive element.
+     Write the ACTUAL content for this app — replace every bracketed value below.)
+
+    <div style="font-family:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif; max-width:680px; padding:20px; border-radius:12px; box-shadow:0 6px 20px rgba(0,0,0,0.06); background:linear-gradient(180deg,#ffffff,#f8fafc); border:1px solid #e2e8f0;">
+      <div style="display:flex; align-items:center; gap:12px; margin-bottom:12px; padding-bottom:12px; border-bottom:1px solid #eef2f6;">
+        <div style="background:[brand-color]; color:white; font-weight:700; padding:4px 10px; border-radius:6px; font-size:12px; letter-spacing:0.5px;">[App Label]</div>
+        <div style="color:#0f172a; font-size:14px; font-weight:600;">[emoji] [One-line description of what this chatflow does]</div>
+      </div>
+      <div style="font-size:13px; color:#334155; line-height:1.6;">
+        <p style="margin:0 0 10px 0;">[2-3 sentences explaining the chatflow's purpose and who it is for.]</p>
+        <div style="display:flex; flex-wrap:wrap; gap:6px; margin-bottom:14px;">
+          <span style="background:#e0f2fe; color:#0284c7; border:1px solid #bae6fd; padding:4px 10px; border-radius:20px; font-size:11px; font-weight:600;">[Capability 1]</span>
+          <span style="background:#e0f2fe; color:#0284c7; border:1px solid #bae6fd; padding:4px 10px; border-radius:20px; font-size:11px; font-weight:600;">[Capability 2]</span>
+          <span style="background:#e0f2fe; color:#0284c7; border:1px solid #bae6fd; padding:4px 10px; border-radius:20px; font-size:11px; font-weight:600;">[Capability 3]</span>
+        </div>
+        <p style="margin:0;">[Exact instruction — e.g. "Type your question below to get started."
+         Or replace this line with a Pattern B button / Pattern C form per Step 2c when the use case calls for it.]</p>
+      </div>
+    </div>
 
   Suggested questions:
     1. "[Realistic example input 1]"
     2. "[Realistic example input 2]"
     3. "[Realistic example input 3]"
 
-Does this plan look right? Type 'approve' to continue, or describe any changes you'd like.
+LOGIC FLOW DIAGRAM:
+  (Plain-language summary of the app's logic — no node types, no internal details)
+
+  ```mermaid
+  flowchart TD
+      [generated diagram from Step 8b]
+  ```
+
+Does this flow match what you had in mind?
+Type 'approve' to continue, or describe any changes you'd like.
 === END PLAN ===
 ```
 
@@ -611,8 +730,9 @@ If the user requests changes to the plan:
 3. Recalculate positions if nodes were added, removed, or reordered
 4. Re-run `.venv/Scripts/python skills/dify/scripts/generate_id.py` for any new nodes
 5. Re-verify graph completeness (Step 7)
-6. Present the revised plan in the same format
-7. Wait for approval again
+6. Regenerate the `LOGIC FLOW DIAGRAM` using Step 8b rules — the diagram must reflect the revised node plan, not the previous version
+7. Present the revised plan in the same format (with the updated diagram)
+8. Wait for approval again
 
 Repeat this cycle until the user approves. Do not proceed without approval.
 
@@ -620,14 +740,14 @@ Repeat this cycle until the user approves. Do not proceed without approval.
 
 ## Hard Constraints
 
-- MUST present the plan to the user and WAIT for explicit approval — "approve", "looks good", "yes", "go ahead", or equivalent affirmation counts
+- MUST present the plan (including the diagram) to the user and WAIT for explicit approval — "approve", "looks good", "yes", "that matches", "go ahead", or any clear affirmation in response to "Does this flow match what you had in mind?" counts
 - NEVER generate YAML — not even a snippet, not even as an example
 - NEVER write LLM system prompts or user prompt templates
 - NEVER skip the user approval step, even if the plan seems obviously correct
 - ALWAYS complete Step 1b (micro-step decomposition) before selecting any node types — the decomposed list must appear in the plan output
 - ONE NODE = ONE FUNCTION — every node must have a single responsibility. If you can describe a node's job using "and", it must be split into two nodes. No exceptions.
 - NEVER use an `llm` node for a task that a more specific node type handles: use `parameter-extractor` for field extraction, `question-classifier` for routing, `code` for data transformation, `if-else` for branching on values, `knowledge-retrieval` for KB lookups
-- Use ONLY valid Dify node type strings from this list: `start`, `llm`, `answer`, `end`, `if-else`, `code`, `http-request`, `knowledge-retrieval`, `tool`, `parameter-extractor`, `question-classifier`, `variable-aggregator`, `variable-assigner`, `iteration`, `template-transform`, `doc-extractor`, `list-operator`, `human-input`
+- Use ONLY valid Dify node type strings from this list: `start`, `llm`, `agent`, `answer`, `end`, `if-else`, `code`, `http-request`, `knowledge-retrieval`, `tool`, `parameter-extractor`, `question-classifier`, `variable-aggregator`, `variable-assigner`, `iteration`, `loop`, `template-transform`, `document-extractor`, `list-operator`, `human-input`
 - Every node ID must be a 13-digit string produced by `.venv/Scripts/python skills/dify/scripts/generate_id.py`
 - The start node must always be at position x=80, y=282
 - Chatflows must end with an `answer` node — never `end`

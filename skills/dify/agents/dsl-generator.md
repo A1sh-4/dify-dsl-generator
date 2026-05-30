@@ -25,10 +25,12 @@ Read ALL of the following before writing a single line of YAML:
 - If workflow: `skills/dify/references/schema/workflow-schema.md`
 - `skills/dify/references/schema/edge-types.md` — edge ID format and handle values
 - `skills/dify/references/schema/variable-syntax.md` — correct variable reference syntax
+- `skills/dify/references/config/variables.md` — the five variable types, how to declare start-node inputs / conversation variables, supported type strings, naming rules, and the type-compatibility matrix
 
 **Node docs — read the doc for every node type that appears in the approved plan:**
 
 - `skills/dify/references/nodes/start.md` — always required
+- `skills/dify/references/nodes/trigger-schedule.md` — if the workflow is schedule-triggered (entry node is `trigger-schedule`, not `start`)
 - `skills/dify/references/nodes/llm.md` — if any LLM nodes
 - `skills/dify/references/nodes/answer.md` — if chatflow
 - `skills/dify/references/nodes/end.md` — if workflow
@@ -38,15 +40,30 @@ Read ALL of the following before writing a single line of YAML:
 - `skills/dify/references/nodes/http.md` — if any http-request nodes
 - `skills/dify/references/nodes/code.md` — if any code nodes
 - `skills/dify/references/nodes/tool.md` — if any tool nodes
+- `skills/dify/references/patterns/plugin-wiring.md` — if any tool nodes: exact `provider_id`/`provider_name`/`tool_name` wiring, plugin auth, and the `dependencies` block that must accompany tool nodes
 - `skills/dify/references/nodes/parameter-extractor.md` — if any parameter-extractor nodes
 - `skills/dify/references/nodes/template-transform.md` — if any template-transform nodes (near-mandatory in every flow)
 - `skills/dify/references/nodes/variable-aggregator.md` — if any variable-aggregator nodes
 - `skills/dify/references/nodes/variable-assigner.md` — if any variable-assigner nodes
 - `skills/dify/references/nodes/iteration.md` — if any iteration nodes
-- `skills/dify/references/nodes/doc-extractor.md` — if any doc-extractor nodes
+- `skills/dify/references/nodes/loop.md` — if any loop nodes
+- `skills/dify/references/nodes/document-extractor.md` — if any document-extractor nodes
 - `skills/dify/references/nodes/list-operator.md` — if any list-operator nodes
 - `skills/dify/references/nodes/human-input.md` — if any human-input nodes
 - `skills/dify/references/nodes/agent.md` — if any agent nodes
+
+**Features & config (read based on what the app needs):**
+
+- `skills/dify/references/features/chatflow-features.md` — if chatflow: the authoritative `features` block reference (opening_statement, suggested_questions, retriever_resource, moderation, follow-ups) — read this when assembling the chatflow `features` block
+- `skills/dify/references/features/file-upload.md` — if any input accepts files or the app processes uploads: the `file_upload` feature block, `single-file`/`file-list` input types, and `sys.files` wiring
+- `skills/dify/references/features/speech.md` — if the chatflow enables speech-to-text or text-to-speech: the `speech_to_text` / `text_to_speech` feature blocks (chatflow only)
+- `skills/dify/references/config/structured-output.md` — if any LLM node sets `structured_output_enabled: true`: the correct `structured_output.schema` field structure, the disabled-state form, and how downstream nodes access `structured_output` fields
+
+**Post-import / operating the app (consult when writing the SETUP.md publish & test steps — summarize the steps for the user, do NOT paste these internal paths into SETUP.md):**
+
+- `skills/dify/references/features/publishing.md` — how the app is published (web app, embedded chat/JS, API access, MCP server) and the constraints per mode; informs the "Publish" and "Test" steps
+- `skills/dify/references/features/monitoring.md` — built-in analytics and external observability (Langfuse/LangSmith/Arize); mention relevant monitoring options when the app has cost- or reliability-sensitive integrations
+- `skills/dify/references/features/evaluation.md` — annotation and evaluation workflows; reference when the app would benefit from systematic quality measurement (e.g., RAG accuracy, classification correctness)
 
 **Templates (use as structural reference, not as copy-paste):**
 - If chatflow: `skills/dify/assets/templates/starter-chatflow.yml`
@@ -55,6 +72,7 @@ Read ALL of the following before writing a single line of YAML:
 - If the plan includes an LLM node with vision enabled: consult `skills/dify/assets/chatflows/ocr-chatflow.yml` for the exact `vision.configs` field structure, `sys.files` variable selector, and `detail: high` setting — do NOT copy the overall file structure, only the vision node config
 - If the plan includes a knowledge-retrieval node: consult `skills/dify/assets/chatflows/rag-chatflow.yml` for the exact `multiple_retrieval_config` weights block, `query_attachment_selector`, `query_variable_selector` format, and the `{{#context#}}` user prompt pattern in the downstream LLM node — do NOT copy the overall file structure, only the relevant node configs
 - If the plan includes an LLM node with `structured_output_enabled: true`: consult `skills/dify/assets/workflows/structured-output.yml` for the exact `structured_output.schema` field structure and the correct template-transform `value_selector` pattern (`structured_output` field, `value_type: object`) — do NOT copy the overall file structure, only the relevant node configs
+- If the plan WRITES into a knowledge base (ingestion / upsert via the Dataset API): read `skills/dify/references/patterns/knowledge-base-ingestion.md` and consult `skills/dify/assets/workflows/knowledge-base-ingestion.yml` for the exact API call + payload syntax (`create-by-text` body with `doc_form`/`process_rule`, segment create/update bodies, the pagination loop). Copy only the relevant `code`/`http-request` node configs — the chunking mode, delimiters, and topology come from knowledge-architect's design, not from copying this example
 
 Read the schema docs and templates to understand the exact field names, required fields, ordering conventions, and top-level structure. The templates reflect real importable DSL — treat them as ground truth.
 
@@ -323,18 +341,21 @@ variables:
     variable: [variable_name]
 ```
 
-**Code node data fields — IMPORTANT: inputs use `variables` array, NOT `inputs` dict:**
+**Code node data fields — IMPORTANT: inputs use a `variables` array (NOT an `inputs` dict); outputs use a DICT keyed by variable name (NOT a list):**
 ```yaml
 type: code
 code: |
   def main(var1: str, var2: int) -> dict:
+      # MUST return every declared output key on every path (use empties on error)
       return {"result": var1, "count": var2}
 code_language: python3
-outputs:                            # REQUIRED: always a LIST — never a dict
-  - type: string                    # string | number | boolean | object | array[string] | array[object]
-    variable: result                # must match the key returned by the function exactly
-  - type: number
-    variable: count
+outputs:                            # REQUIRED: a DICT/mapping keyed by variable name — never a list
+  result:                           # the KEY is the variable name (must match a returned key exactly)
+    type: string                    # string | number | boolean | object | array[string] | array[number] | array[object]
+    children: null                  # always null for code-node outputs
+  count:
+    type: number
+    children: null
 retry_config:
   max_retries: 3
   retry_enabled: true
@@ -753,7 +774,7 @@ Install each plugin before importing the DSL. Missing plugins cause a "plugin no
 
 ### 3a — Import
 
-1. Go to Dify Studio (`app.dify.ai` or your self-hosted Dify URL)
+1. Go to Dify Studio (`https://app-human04s.tsunagi.ai` or your self-hosted Dify URL)
 2. Click **Create App** → **Import DSL**
 3. Upload `[project-name].yml`
 4. The app canvas opens — all nodes appear but the knowledge-retrieval node shows no dataset connected yet (this is expected)
@@ -854,6 +875,28 @@ headers: "Authorization: Bearer {{#env.SLACK_BOT_TOKEN#}}"
 ```
 
 If the requirements brief mentions an external service requiring authentication, add the environment variable name to the `environment_variables` block in the workflow section (with `value: ""` — Dify will prompt the user to fill it in on import).
+
+### Knowledge-base ingestion flows — env vars + SETUP.md
+
+When the flow WRITES into a Dify knowledge base via the Dataset API (see
+`skills/dify/references/patterns/knowledge-base-ingestion.md`), declare these `environment_variables`
+with empty placeholder values (`value: ""`, `value_type: secret`) — never hardcode them:
+
+- the **dataset API key** (e.g. `KB_API`) — used as `Authorization: Bearer {{#env.KB_API#}}`
+- the **dataset (KB) UUID** (e.g. `DB_ID`) — used in the URL path `/datasets/{{#env.DB_ID#}}/...`
+- optionally a **base URL** (e.g. `DIFY_BASE_URL` = `https://<your-dify-domain>/v1`) so `code` nodes
+  don't hardcode the instance domain
+
+Because these values are not guessable, the **SETUP.md must include a step explaining how to obtain
+and wire each one**:
+
+- **Dataset API key** — in Dify, open the target Knowledge Base → **API Access** → create/copy a
+  key (starts with `dataset-`); paste into the `KB_API` env var.
+- **Dataset ID** — from the KB URL `.../datasets/<COPY THIS>/documents`; paste into `DB_ID`.
+- **Base URL** — confirm the instance base URL and set `DIFY_BASE_URL` (and/or replace the
+  placeholder domain in any `code` node that builds a URL).
+- **Chunking-mode match** — note the document `doc_form` the workflow sends and that the target KB
+  must have been created with the matching chunking mode, or ingestion fails.
 
 ---
 

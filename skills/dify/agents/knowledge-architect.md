@@ -19,15 +19,71 @@ Read the following documentation files before advising the user:
 
 - `skills/dify/references/features/knowledge-base.md` — Dify's knowledge base capabilities, supported file types, indexing modes
 - `skills/dify/references/patterns/rag-pattern.md` — standard RAG node graph patterns, context injection approaches, prompt templates
-- `skills/dify/references/setup/knowledge-base-setup.md` — step-by-step setup instructions, dataset ID location, embedding model configuration
+- `skills/dify/references/api/dify-api-reference.md` — read if the design needs to **manage the knowledge base programmatically** (create datasets, upload/update/delete documents, trigger re-indexing) rather than only retrieve from it; covers the Dify Knowledge Base API endpoints and auth
+- `skills/dify/references/api/calling-dify-from-http.md` — read if the workflow itself must call the Dify KB API at runtime (e.g., an HTTP node that adds a document to a dataset mid-flow); shows the `{{#env.DIFY_BASE_URL#}}` + API-key HTTP node pattern
+- `skills/dify/references/patterns/knowledge-base-ingestion.md` — **read whenever the workflow WRITES into a KB** (ingest / upsert / sync content, not just retrieve): chunking-mode selection (general / parent-child / Q&A), how to choose parent and child delimiters from the data, the Dataset write-API surface, and the idempotent upsert topology
+- `skills/dify/assets/workflows/knowledge-base-ingestion.yml` — ground-truth syntax reference for the KB write API calls and payloads (one parent-child example; not the only topology)
 
 ---
 
 ## Step-by-Step Process
 
+### Step 0 (pre): Direction Decision — read from a KB, or write into one?
+
+Before anything else, decide which direction this workflow moves data:
+
+- **Retrieve (read FROM a KB)** — the workflow answers questions / grounds an LLM using existing
+  KB content. This is the standard RAG case → continue with **Step 0: RAG Topology Decision** and
+  the retrieval-focused steps below.
+- **Ingest (write INTO a KB)** — the workflow loads, syncs, or upserts content into a KB (e.g., a
+  file/report → KB, a scheduled sync). There is no native write node; this is done via the Dataset
+  API → **switch to the ingestion track**: read
+  `skills/dify/references/patterns/knowledge-base-ingestion.md` and design per its Steps 1–6
+  (choose the chunking mode and the parent/child delimiters from the *data* — do not default to
+  parent-child; design the idempotent upsert topology; declare the env vars for the dataset API key
+  + dataset id + base URL; specify what the SETUP.md must explain). Hand the result to node-planner
+  and dsl-generator, citing the `knowledge-base-ingestion.yml` asset for exact API call syntax.
+- **Both** — some apps ingest on one path and retrieve on another. Design each direction with its
+  own track; they share only the dataset id.
+
+The retrieval steps below (Steps 0–8) apply to the **retrieve** direction. For the **ingest**
+direction, the ingestion pattern doc is authoritative and replaces Steps 3–8 with its own
+mode/delimiter/topology decisions; still gather data characteristics (Step 1) and data readiness
+(Step 2) first, since ingestion also needs to know the document shape and whether sample data exists.
+
+### Step 0: RAG Topology Decision
+
+**Before gathering document characteristics, determine which RAG topology this workflow needs.** The topology choice fundamentally changes the node graph — it must be decided before any other step so that the right design package is handed to node-planner.
+
+Look at the requirements brief and match against this table:
+
+| Signal in requirements | Topology | Node types |
+| --- | --- | --- |
+| Single knowledge base, one query per run | **Basic RAG** | `knowledge-retrieval → llm` |
+| Ambiguous or short user queries needing reformulation | **RAG + query rewrite** | `llm (rewrite) → knowledge-retrieval → llm` |
+| Multiple separate knowledge bases (different teams, topics, or languages) | **Parallel multi-KB RAG** | `N × knowledge-retrieval (parallel) → variable-aggregator → llm` |
+| A list of questions or documents to process in batch | **Iterative RAG** | `iteration [knowledge-retrieval → llm] → template-transform` |
+| High-stakes Q&A where one retrieval pass may be insufficient | **Agentic loop RAG** | `loop [knowledge-retrieval → sufficiency-check llm → assigner] → answer llm` |
+
+**Decision rule:**
+
+- If only one KB is mentioned and the query comes from `sys.query` → **Basic RAG** (proceed to Step 1)
+- If the requirements mention "rewrite query", "reformulate", or user queries are described as short/ambiguous → **RAG + query rewrite** (proceed to Step 1)
+- If multiple separate KBs are mentioned → **Parallel multi-KB RAG** (note topology, proceed to Step 1 for each KB's settings separately)
+- If the input is a list or array of items → **Iterative RAG** (note topology, proceed to Step 1)
+- If the user says "keep trying until confident", "iterative refinement", "self-check", or "quality gate" → **Agentic loop RAG** (note topology, proceed to Step 1)
+
+**Output of this step:** Record `rag_topology: [basic | rewrite | parallel-multi-kb | iterative | agentic-loop]` and include it in the RAG design package you produce in Step 6. Node-planner uses this to choose the right graph shape.
+
+**Reference patterns:** See `skills/dify/references/patterns/rag-pattern.md` for complete YAML examples of each topology.
+
+---
+
 ### Step 1: Gather Document Characteristics
 
-Ask the following three questions in a single message. Do not ask them one at a time.
+**Check first:** If the orchestrator (SKILL.md Step 4b) already collected document characteristics and passed them as `document_characteristics` context, skip directly to Step 3 — do not ask these questions again.
+
+If no prior context was provided, ask the following three questions in a single message. Do not ask them one at a time.
 
 ```
 Before I design the retrieval pipeline, I need to understand your documents:
@@ -50,7 +106,9 @@ Wait for the user's answers before proceeding to Step 2.
 
 ### Step 2: The Critical Data Readiness Question
 
-Ask this as a separate, clearly framed question. This single question determines whether dummy-data-generator must be spawned.
+**Check first:** If the orchestrator already collected a `data_readiness` answer (`user_has_data`, `dummy_data_generated`, or `web_data_fetched`) and passed it as context, skip directly to Step 3 — do not ask this question again.
+
+If no prior context was provided, ask this as a separate, clearly framed question. This single question determines whether dummy-data-generator must be spawned.
 
 ```
 One important question before I finalize the design:
@@ -260,6 +318,7 @@ After completing all steps, print the full RAG design package:
 === RAG DESIGN: [Workflow Name] ===
 
 Data strategy: [user-provided | dummy-generated | web-fetched]
+RAG topology: [basic | rewrite | parallel-multi-kb | iterative | agentic-loop]
 [If dummy-generated or web-fetched: knowledge/[project-name]/ — see UPLOAD-GUIDE.md]
 
 CHUNKING:

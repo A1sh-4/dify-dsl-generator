@@ -7,10 +7,12 @@ This document covers the Dify REST API surface — base URL, authentication, end
 ## Base URL and Authentication
 
 ```
-Base URL:       https://api.dify.ai/v1
+Base URL:       https://<your-dify-domain>/v1
 Auth header:    Authorization: Bearer {APP_API_KEY}
 Content-Type:   application/json
 ```
+
+For the self-hosted instance used in this project, the base URL is `https://app-human04s.tsunagi.ai/v1`. See `references/config/instance-url.md` for the full instance URL reference and the `{{env.DIFY_BASE_URL}}` environment variable pattern.
 
 All requests require an `Authorization` header carrying a Bearer token. The token type depends on what you are doing — see **API Key Types** below.
 

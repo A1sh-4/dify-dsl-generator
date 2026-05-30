@@ -114,7 +114,8 @@ workflow:
         - id: a1b2c3d4-0001-0000-0000-000000000001
           role: system
           text: "Analyze the following text and return a structured assessment.\n\nText:\
-            \ {{#1700000000001.input_text#}}"
+            \ {{#1700000000001.input_text#}}\n\nReturn your response as a JSON object.\
+            \ Do not include explanations, preamble, or markdown."
         selected: false
         structured_output:
           schema:

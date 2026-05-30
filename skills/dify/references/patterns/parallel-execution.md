@@ -324,7 +324,6 @@ workflow:
           desc: "Synthesize search results and scraped content into a final answer."
           model:
             completion_params:
-              max_tokens: 2048
               temperature: 0.3
             mode: chat
             name: gpt-4o-mini

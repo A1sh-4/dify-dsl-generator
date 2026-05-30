@@ -133,7 +133,6 @@ start → parameter-extractor (detect prefs) → variable-assigner (save prefs) 
     desc: "Detect language and format preferences from user message."
     model:
       completion_params:
-        max_tokens: 128
         temperature: 0.0
       mode: chat
       name: gpt-4o-mini
@@ -505,7 +504,6 @@ workflow:
           desc: "Detect the language the user is writing in."
           model:
             completion_params:
-              max_tokens: 64
               temperature: 0.0
             mode: chat
             name: gpt-4o-mini
@@ -577,34 +575,24 @@ workflow:
               size: 10
           model:
             completion_params:
-              max_tokens: 1024
               temperature: 0.7
             mode: chat
             name: gpt-4o-mini
             provider: openai
           prompt_template:
-            - edition_type: basic
-              id: lang-system-prompt
+            - id: lang-system-prompt
               role: system
               text: |
                 You are a helpful assistant. Always respond in this language: {{#conversation.preferred_language#}}
 
                 If the language code is "en", respond in English.
                 If "fr", respond in French. If "es", respond in Spanish. Apply the same logic for all other codes.
-            - edition_type: basic
-              id: lang-user-prompt
+            - id: lang-user-prompt
               role: user
               text: "{{#1748300000001.sys.query#}}"
-          retry_config:
-            max_retries: 3
-            retry_enabled: true
-            retry_interval: 1000
           selected: false
-          structured_output: {}
-          structured_output_enabled: false
           title: Respond
           type: llm
-          variables: []
           vision:
             enabled: false
         height: 98
