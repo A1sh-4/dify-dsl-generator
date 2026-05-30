@@ -15,7 +15,7 @@ Use knowledge-retrieval when:
 - You need source attribution (which document a passage came from)
 - You are building a Q&A assistant, documentation search, or research tool
 
-Do not use knowledge-retrieval to process a single document uploaded at runtime — use the doc-extractor node for that purpose. Knowledge-retrieval is for querying a persistent, indexed collection.
+Do not use knowledge-retrieval to process a single document uploaded at runtime — use the document-extractor node for that purpose. Knowledge-retrieval is for querying a persistent, indexed collection.
 
 ## Required Configuration
 
@@ -83,17 +83,23 @@ Reference individual fields downstream as `{{#knowledge_retrieval_node_id.result
 
 **Method 1: Context variable (recommended)**
 
-In the LLM node's context section, add the `result` array directly. The LLM node will automatically format the chunks into the prompt.
+In the LLM node's `context` block, point `variable_selector` to the `result` output of the knowledge-retrieval node. Then use `{{#context#}}` in the user prompt — Dify expands this to the retrieved chunks at runtime.
 
 ```yaml
-- id: llm_answer
-  type: llm
-  data:
-    context:
-      enabled: true
-      variable_selector:
-        - knowledge_retrieval
-        - result
+context:
+  enabled: true
+  variable_selector:
+    - '[knowledge_retrieval_node_id]'   # actual 13-digit node ID
+    - result
+```
+
+In the prompt template user turn:
+
+```yaml
+- edition_type: basic
+  id: '[uuid]'
+  role: user
+  text: '{{#context#}}'
 ```
 
 **Method 2: Format with template-transform**
@@ -110,80 +116,99 @@ Source: {{ chunk.title }}
 
 ## Complete YAML Example
 
+The following matches the real structure exported from Dify. Note:
+
+- `retrieval_mode: multiple` is the standard mode Dify uses when you configure weighted hybrid retrieval
+- `query_variable_selector` uses `[start_node_id, sys.query]` — the start node's system query variable
+- `query_attachment_selector: []` is always present
+- The LLM node uses `{{#context#}}` in the user prompt to receive the retrieved chunks
+
 ```yaml
-nodes:
-  - id: start
-    type: start
-    data:
-      variables:
-        - variable: user_query
-          type: string
-          label: Your question
-          required: true
-
-  - id: knowledge_retrieval
-    type: knowledge-retrieval
-    data:
-      title: Search Knowledge Base
-      query_variable_selector:
-        - start
-        - user_query
-      dataset_ids:
-        - your-dataset-id-here
-      retrieval_mode: hybrid_search
-      single_retrieval_config:
-        model:
-          provider: openai
-          name: text-embedding-3-small
-          mode: embedding
+- data:
+    dataset_ids:
+    - YOUR_DATASET_ID_HERE
+    multiple_retrieval_config:
+      reranking_enable: false
+      reranking_mode: weighted_score
+      score_threshold: null
       top_k: 5
-      score_threshold_enabled: true
-      score_threshold: 0.5
-      reranking_mode: disabled
-
-  - id: llm_answer
-    type: llm
-    data:
-      title: Answer Question
-      model:
-        provider: openai
-        name: gpt-4o
-        mode: chat
-      context:
-        enabled: true
-        variable_selector:
-          - knowledge_retrieval
-          - result
-      prompt_template:
-        - role: system
-          text: >
-            You are a helpful assistant. Answer the user's question using only
-            the provided context. If the context does not contain the answer,
-            say so clearly.
-        - role: user
-          text: "{{#start.user_query#}}"
-
-  - id: end
-    type: end
-    data:
-      outputs:
-        - variable: answer
-          value_selector:
-            - llm_answer
-            - text
-
-edges:
-  - source: start
-    target: knowledge_retrieval
-  - source: knowledge_retrieval
-    target: llm_answer
-  - source: llm_answer
-    target: end
+      weights:
+        keyword_setting:
+          keyword_weight: 0.3
+        vector_setting:
+          embedding_model_name: YOUR_EMBEDDING_MODEL_HERE
+          embedding_provider_name: langgenius/openai_api_compatible/openai_api_compatible
+          vector_weight: 0.7
+        weight_type: customized
+    query_attachment_selector: []
+    query_variable_selector:
+    - '[start_node_id]'   # 13-digit ID of the start node
+    - sys.query
+    retrieval_mode: multiple
+    selected: false
+    title: Knowledge Retrieval
+    type: knowledge-retrieval
+  height: 92
+  id: '[knowledge_retrieval_node_id]'
+  position:
+    x: 376
+    y: 303
+  positionAbsolute:
+    x: 376
+    y: 303
+  sourcePosition: right
+  targetPosition: left
+  type: custom
+  width: 243
 ```
+
+**Downstream LLM node — how to consume the retrieved context:**
+
+```yaml
+- data:
+    context:
+      enabled: true
+      variable_selector:
+      - '[knowledge_retrieval_node_id]'
+      - result
+    prompt_template:
+    - edition_type: basic
+      id: '[uuid]'
+      role: system
+      text: 'Answer only from the provided context. Cite your sources.'
+    - edition_type: basic
+      id: '[uuid]'
+      role: user
+      text: '{{#context#}}'   # expands to retrieved document chunks at runtime
+    ...
+```
+
+**Ground-truth config reference:** `skills/dify/assets/chatflows/rag-chatflow.yml` — complete working RAG chatflow exported from a real Dify instance showing the full knowledge-retrieval node config and downstream LLM wiring.
 
 ## Pattern: Start → Knowledge-Retrieval → LLM → Answer
 
 This is the standard RAG chatflow pattern. The start node captures the user's query, knowledge-retrieval finds relevant chunks, the LLM synthesizes an answer grounded in those chunks, and the answer node streams the result back to the user.
+
+## Post-Import: Connecting the Knowledge Base on the Canvas
+
+When a DSL is imported, the knowledge-retrieval node contains a placeholder `dataset_id` (`YOUR_DATASET_ID_HERE`). The node will be visible on the canvas but will show no dataset connected. You must connect it manually after import — this cannot be done through the YAML alone.
+
+**Steps to connect:**
+
+1. Open the imported app in the Dify canvas
+2. Click the **Knowledge Retrieval** node (or whatever name was given to it) to open its settings panel
+3. In the **Datasets** section, click the **+** (Add) button
+4. A modal appears listing all knowledge bases in your workspace — select the one you created for this app
+5. The node now shows the dataset name — close the panel
+
+**Before doing this, the knowledge base must already exist and be fully indexed.** Always complete the knowledge base setup (upload, index, wait for "Completed" status on all documents) before importing the DSL and connecting the node.
+
+**Order of operations:**
+
+1. Create and index the knowledge base in the Knowledge tab
+2. Import the DSL
+3. Connect the knowledge base to the node on the canvas
+4. Test the app
 
 ## Common Mistakes
 

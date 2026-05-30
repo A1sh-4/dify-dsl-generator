@@ -46,7 +46,8 @@ nodes:
           text: |
             Analyze the provided article. Return a structured assessment
             covering the title, sentiment, quality score, relevant tags,
-            and document metadata.
+            and document metadata. Return your response as a JSON object.
+            Do not include explanations, preamble, or markdown.
       structured_output:
         schema:
           additionalProperties: false

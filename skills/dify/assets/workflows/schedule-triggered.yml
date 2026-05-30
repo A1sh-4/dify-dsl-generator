@@ -1,9 +1,10 @@
 app:
-  description: A simple workflow that takes a user question and returns an LLM-generated answer.
+  description: A workflow triggered automatically on a cron schedule. Generates a
+    daily briefing using the current timestamp.
   icon: 🤖
   icon_background: '#FFEAD5'
   mode: workflow
-  name: Simple LLM Workflow
+  name: Schedule Triggered Workflow
   use_icon_as_answer_icon: false
 dependencies:
 - current_identifier: null
@@ -51,7 +52,7 @@ workflow:
       number_limits: 3
     opening_statement: ''
     retriever_resource:
-      enabled: false
+      enabled: true
     sensitive_word_avoidance:
       enabled: false
     speech_to_text:
@@ -68,12 +69,12 @@ workflow:
     - data:
         isInIteration: false
         isInLoop: false
-        sourceType: start
+        sourceType: trigger-schedule
         targetType: llm
-      id: 1718001000001-source-1718001000002-target
-      source: '1718001000001'
+      id: 1718006000001-source-1718006000002-target
+      source: '1718006000001'
       sourceHandle: source
-      target: '1718001000002'
+      target: '1718006000002'
       targetHandle: target
       type: custom
       zIndex: 0
@@ -82,30 +83,34 @@ workflow:
         isInLoop: false
         sourceType: llm
         targetType: end
-      id: 1718001000002-source-1718001000003-target
-      source: '1718001000002'
+      id: 1718006000002-source-1718006000003-target
+      source: '1718006000002'
       sourceHandle: source
-      target: '1718001000003'
+      target: '1718006000003'
       targetHandle: target
       type: custom
       zIndex: 0
     nodes:
     - data:
+        config:
+          frequency: daily
+          mode: visual
+          timezone: UTC
+          visual_config:
+            monthly_days:
+            - 1
+            on_minute: 0
+            time: 12:00 AM
+            weekdays:
+            - sun
+        cron_expression: 0 9 * * *
+        mode: cron
         selected: false
-        title: Start
-        type: start
-        variables:
-        - default: ''
-          hint: ''
-          label: Your question
-          max_length: 2048
-          options: []
-          placeholder: ''
-          required: true
-          type: paragraph
-          variable: user_query
-      height: 111
-      id: '1718001000001'
+        timezone: UTC
+        title: Schedule Trigger
+        type: trigger-schedule
+      height: 130
+      id: '1718006000001'
       position:
         x: 80
         y: 282
@@ -116,7 +121,7 @@ workflow:
       sourcePosition: right
       targetPosition: left
       type: custom
-      width: 243
+      width: 242
     - data:
         context:
           enabled: false
@@ -125,56 +130,60 @@ workflow:
           completion_params:
             temperature: 0.7
           mode: chat
-          name: GPT-4o
+          name: Claude-4-Sonnet
           provider: langgenius/openai_api_compatible/openai_api_compatible
         prompt_template:
-        - id: e614d41b-6cf9-44f5-a2d7-ddf45bb56e87
+        - id: c830e086-063b-4e60-bd29-1fdb1922ac1d
           role: system
-          text: You are a helpful assistant. Answer the user's question clearly and
-            concisely.
-        - id: cc37b008-2c50-465c-886b-a4714212aa54
+          text: 'You are a helpful assistant that generates daily briefings.
+
+            '
+        - id: 0d11ad5f-b59d-4cc6-8551-20009d7127b4
           role: user
-          text: '{{#1718001000001.user_query#}}'
+          text: 'Generate a short daily briefing. Current timestamp: {{#sys.timestamp#}}
+
+            '
         selected: false
         title: LLM
         type: llm
         vision:
           enabled: false
-      height: 90
-      id: '1718001000002'
+      height: 88
+      id: '1718006000002'
       position:
-        x: 383
-        y: 282
+        x: 384
+        y: 303
       positionAbsolute:
-        x: 383
-        y: 282
+        x: 384
+        y: 303
       selected: false
       sourcePosition: right
       targetPosition: left
       type: custom
-      width: 243
+      width: 242
     - data:
         outputs:
         - value_selector:
-          - '1718001000002'
+          - '1718006000002'
           - text
           value_type: string
           variable: text
         selected: false
-        title: End
+        title: Output
         type: end
-      height: 90
-      id: '1718001000003'
+      height: 88
+      id: '1718006000003'
       position:
         x: 686
-        y: 282
+        y: 303
       positionAbsolute:
         x: 686
-        y: 282
+        y: 303
+      selected: false
       sourcePosition: right
       targetPosition: left
       type: custom
-      width: 243
+      width: 242
     viewport:
       x: 0
       y: 0

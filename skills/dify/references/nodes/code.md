@@ -94,23 +94,30 @@ A Code node that cleans and truncates input text:
           }
     code_language: python3
     desc: ''
-    inputs:
-      text:
-        type: string
-        value: '{{#start.raw_text#}}'
-      max_length:
-        type: number
-        value: '{{#start.limit#}}'
     outputs:
       clean_text:
         type: string
+        children: null
       word_count:
         type: number
+        children: null
       was_truncated:
         type: boolean
+        children: null
     selected: false
     title: Clean Text
     type: code
+    variables:
+    - value_selector:
+      - '1732001000001'
+      - raw_text
+      value_type: string
+      variable: text
+    - value_selector:
+      - '1732001000001'
+      - limit
+      value_type: number
+      variable: max_length
   height: 54
   id: '1732001000010'
   position:
@@ -128,17 +135,65 @@ A Code node that cleans and truncates input text:
 
 ## Input and Output Variable Types
 
-**Input variable types** (in `inputs` section):
+**Input variable types** (in `variables` list — do NOT use an `inputs:` dict):
+
+Each entry in the `variables` list uses `value_type:` (not `type:`):
 - `string` — text
 - `number` — integer or float
 - `boolean` — true/false
 - `object` — JSON object
-- `array_string`, `array_number`, `array_object`, `array_boolean` — typed arrays
+- `array[string]`, `array[number]`, `array[object]` — typed arrays
+- `secret` — references an environment variable via `value_selector: [env, VAR_NAME]`
 
-**Output variable types** (in `outputs` section, using Dify SegmentType):
-- `string`, `number`, `boolean`, `object`
-- `array_string`, `array_number`, `array_object`, `array_boolean`
-- `children`: optional nested structure definition for `object` types
+**Output variable types** (`outputs` is a DICT/mapping keyed by variable name — never a list):
+
+Dify stores code-node outputs as a mapping. Each key is the output variable name; each value is a
+mapping with two fields: `type:` and `children:`. `children` is **always `null`** for code-node
+outputs — it is never populated, even for `object` / `array[object]` types (confirmed across real
+Dify exports).
+
+```yaml
+outputs:
+  my_var:               # the KEY is the variable name (must match a key returned by the function)
+    type: string        # string | number | boolean | object | array[string] | array[number] | array[object]
+    children: null      # always null for code-node outputs
+```
+
+> Only **code-node** outputs use this dict shape. **End-node** outputs use a *list* of
+> `{value_selector, variable, value_type}` entries — do not confuse the two.
+
+### Always return every declared output — on every code path
+
+Whatever you declare in `outputs`, the function MUST return **all** of those keys, with the **same
+names and types**, on **every** path — including error paths (an exception, a failed API call, bad
+input). A downstream node references `{{#code_node.var#}}`; if the function returns early without
+that key, the variable is undefined at runtime and the downstream node breaks — turning a
+recoverable error into a hard workflow failure.
+
+Initialize all outputs up front and return safe empties (`""`, `0`, `false`, `[]`, `{}`) on failure:
+
+```python
+def main(file_name: str) -> dict:
+    # declare every output up front with a safe default
+    is_valid = False
+    year_month = ""
+    error_message = ""
+    try:
+        # ... real logic ...
+        is_valid = True
+        year_month = "2025-04"
+    except Exception as e:
+        error_message = str(e)
+    # every path returns the SAME keys and types
+    return {
+        "is_valid": is_valid,            # boolean
+        "year_month": year_month,        # string (empty on failure)
+        "error_message": error_message,  # string
+    }
+```
+
+This matches how real Dify workflows are authored and keeps downstream `if-else` / consumer nodes
+working even when the code node hits an error.
 
 ## Output Variable Access
 

@@ -29,6 +29,11 @@ build/
 # Generated DSL output (user-generated files, not part of the plugin)
 output/
 
+# Scratch/test DSL exports dropped in the repo root (not part of the plugin).
+# Anchored with a leading slash so real assets under skills/ are NOT ignored.
+/*.yml
+/*.yaml
+
 # Test-run YAMLs
 skills/dify/tests/*.yml
 

@@ -23,6 +23,7 @@ You do NOT generate workflow-level YAML. You do NOT research APIs. You produce o
 **Read this file first, before any web fetch or web search:**
 
 - `skills/dify/references/features/plugins-marketplace.md` — commonly used plugins with full DSL configurations, provider IDs, tool names, and parameter schemas
+- `skills/dify/references/patterns/plugin-wiring.md` — how a discovered plugin is wired into a `tool` node downstream (`provider_id`/`provider_name`/`tool_name`, auth, and the `dependencies` block); read this so the plugin config you report back is shaped correctly for node-planner and dsl-generator
 
 Read this document in full before going to the web. Many services are already documented there with ready-to-use YAML.
 

@@ -1,11 +1,16 @@
 {
-  "hooks": [
-    {
-      "name": "auto-validate-dsl",
-      "event": "PostToolCall",
-      "tool": "Write",
-      "condition": "path.endswith('.yml') or path.endswith('.yaml')",
-      "command": "skills/dify/hooks/post-write-validate.sh"
-    }
-  ]
+  "_comment": "This file documents the hook intent for this skill. The hook is NOT loaded from here — Claude Code hooks are registered in .claude/settings.local.json using the format below. Copy the hooks block into settings.local.json on any machine where you want auto-validation to fire.",
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "pwsh -NoProfile -File skills/dify/hooks/post-write-validate.ps1"
+          }
+        ]
+      }
+    ]
+  }
 }

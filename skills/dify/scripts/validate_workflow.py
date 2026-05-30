@@ -253,11 +253,15 @@ def validate(data: dict, verbose: bool = False) -> list:
             errors.append(f"Edge[{i}] 'type' must be 'custom', got '{edge_type}'.")
 
     # ------------------------------------------------------------------
-    # 9. At least one 'start' node
+    # 9. At least one entry node (start, or a trigger node for workflows)
     # ------------------------------------------------------------------
     node_types = list(node_type_map.values())
-    if "start" not in node_types:
-        errors.append("No node with type 'start' found — every flow needs a start node.")
+    entry_node_types = {"start", "trigger-schedule", "trigger-webhook"}
+    if not entry_node_types.intersection(node_types):
+        errors.append(
+            "No entry node found - every flow needs a 'start' node "
+            "(or a 'trigger-schedule' / 'trigger-webhook' entry node for workflows)."
+        )
 
     # ------------------------------------------------------------------
     # 10. At least one terminal node (end or answer)
@@ -341,15 +345,54 @@ def validate(data: dict, verbose: bool = False) -> list:
                     f"Code node '{nid}' uses old 'inputs' dict format — "
                     "must use 'variables' list with value_selector entries."
                 )
-            # Check outputs have children: null
+            # Check outputs use the dict/mapping format Dify actually produces (ground truth):
+            #   outputs:
+            #     var_name:
+            #       type: string      # one of the 7 valid code-output types
+            #       children: null    # always null for code-node outputs
+            # NOTE: only CODE-node outputs are a dict. END-node outputs are a list
+            # (handled separately by check 14b) - do not conflate the two.
             outputs = ndata.get("outputs")
-            if isinstance(outputs, dict):
-                for out_name, out_val in outputs.items():
-                    if isinstance(out_val, dict) and "children" not in out_val:
-                        errors.append(
-                            f"Code node '{nid}' output '{out_name}' is missing "
-                            "'children: null' field."
-                        )
+            if outputs is not None:
+                valid_out_types = {
+                    "string", "number", "boolean", "object",
+                    "array[string]", "array[number]", "array[object]",
+                }
+                if isinstance(outputs, list):
+                    errors.append(
+                        f"Code node '{nid}' outputs use the old list format - "
+                        "must be a dict/mapping keyed by variable name, each value a "
+                        "mapping with 'type:' and 'children:' (children: null)."
+                    )
+                elif isinstance(outputs, dict):
+                    for var_name, spec in outputs.items():
+                        if not isinstance(spec, dict):
+                            errors.append(
+                                f"Code node '{nid}' output '{var_name}' must be a mapping "
+                                "with 'type:' and 'children:' fields."
+                            )
+                            continue
+                        out_type = spec.get("type")
+                        if out_type is None:
+                            errors.append(
+                                f"Code node '{nid}' output '{var_name}' is missing 'type:'."
+                            )
+                        elif str(out_type) not in valid_out_types:
+                            errors.append(
+                                f"Code node '{nid}' output '{var_name}' has invalid type "
+                                f"'{out_type}' - must be one of: string, number, boolean, "
+                                "object, array[string], array[number], array[object]."
+                            )
+                        if "children" not in spec:
+                            errors.append(
+                                f"Code node '{nid}' output '{var_name}' is missing 'children:' - "
+                                "use 'children: null' for code-node outputs."
+                            )
+                else:
+                    errors.append(
+                        f"Code node '{nid}' outputs must be a dict/mapping keyed by "
+                        "variable name (with 'type:' and 'children:' per entry)."
+                    )
 
         # 14b. End node outputs must use value_type not label
         if ntype == "end":
@@ -385,6 +428,13 @@ def validate(data: dict, verbose: bool = False) -> list:
 # ---------------------------------------------------------------------------
 
 def main():
+    # Windows consoles default to cp932; force UTF-8 so non-ASCII in messages
+    # (em-dashes in existing checks, Japanese node titles, etc.) never crash on print.
+    try:
+        sys.stdout.reconfigure(encoding="utf-8")
+    except (AttributeError, ValueError):
+        pass
+
     parser = argparse.ArgumentParser(
         description="Validate a Dify DSL workflow YAML file."
     )

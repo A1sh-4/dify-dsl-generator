@@ -33,8 +33,10 @@ Anywhere you would previously have written a small serverless function to handle
 When you save a workflow containing a Webhook Trigger node, Dify generates a unique, stable URL for that workflow:
 
 ```
-https://api.dify.ai/webhooks/{unique_id}
+https://<your-dify-domain>/webhooks/{unique_id}
 ```
+
+For this project's instance: `https://app-human04s.tsunagi.ai/webhooks/{unique_id}`
 
 The `{unique_id}` is a UUID assigned to the workflow. This URL is displayed in the node's configuration panel in the Dify editor. Copy it and paste it into the external system's webhook settings.
 

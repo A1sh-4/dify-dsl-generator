@@ -38,7 +38,8 @@ Before writing any explanation, trace the flow:
 2. Follow each edge from the start node to its target. Note the target node's type, title, and what it logically does.
 3. Continue tracing forward until you reach all terminal nodes (`answer` for chatflows, `end` for workflows).
 4. If there are branches (if-else nodes), trace each branch separately.
-5. If there are loops (iteration nodes), note what the loop iterates over and what each iteration does.
+5. If there are **iteration nodes**, note what array the loop iterates over and what each iteration does.
+6. If there are **loop nodes**, note the termination condition (`break_conditions`), what loop variables are being refined across cycles, and the maximum cycle count (`loop_count`).
 
 Note any nodes that are unreachable (no edge points to them) — these may be unused or leftover from an earlier version.
 
@@ -54,6 +55,8 @@ Scan for:
 ### Step 4 — Write the explanation
 
 Structure your explanation using the sections below. Adapt the depth of each section to what is actually present in the DSL — skip sections that are empty or irrelevant.
+
+For the **Visual Flow Diagram** section: draw on your node map from Step 2 (for `data.title` labels and `data.type` shapes) and the edges array from Step 3 (for parallel fan-out detection). The full generation rules are in the Output Format below — read them before drawing the diagram.
 
 ---
 
@@ -95,6 +98,58 @@ Example format:
 4. If technical: the app searches the product knowledge base for relevant articles and uses them to compose an answer.
 5. The formatted response is streamed back to the user in the chat window.
 ```
+
+---
+
+### Visual Flow Diagram
+
+After writing the "How It Works" prose walkthrough, generate a Mermaid flowchart that shows
+the same flow visually. This is a plain-language business logic diagram — do NOT show node
+types, node IDs, or Dify variable syntax.
+
+**How to generate the diagram from the YAML:**
+
+1. Walk the same node path you traced in Step 2 (the node map). For each node, use
+   `data.title` as the chart label — node titles are already written in plain language.
+
+2. **Node shapes:**
+   - Nodes whose `data.type` is `if-else` or `question-classifier` → diamond `{Title}`
+   - Nodes whose `data.type` is `start` or `answer` or `end` → stadium `([Title])`
+   - Nodes whose `data.type` is `iteration` → rounded rectangle with `🔁` prefix: `(🔁 Title [for each item])`
+   - All other nodes → rounded rectangle `(Title)`
+
+3. **Branch labels for if-else nodes:**
+   - Read the `conditions` array from the if-else node's data to get the condition description
+   - Simplify to plain language: `|Answer found|`, `|No results|`, `|Billing|`, `|Technical|`
+   - If you cannot derive a plain-language label from the conditions, use `|Yes|` / `|No|`
+
+4. **Branch labels for question-classifier nodes:**
+   - Read the `classes` array — each class has a `name` field. Use those names as branch labels.
+
+5. **Parallel branches (fan-out detection):** Scan `workflow.graph.edges` and group all edges by
+   `source_node_id`. Any source node (other than `if-else` or `question-classifier`, which are
+   handled by rules 3–4 above) that has two or more outgoing edges to distinct targets is a
+   structural fan-out. Show all parallel branches as separate arrows from the same source box,
+   converging at the first downstream node they all share.
+
+6. Use `flowchart TD` direction. Use short IDs (A, B, C...) as Mermaid node IDs — never
+   the 13-digit Dify node IDs.
+
+Format the output as:
+
+```
+### Visual Flow Diagram
+
+```mermaid
+flowchart TD
+    [generated diagram]
+```
+
+*Use the step-by-step walkthrough above for detailed explanations of each step.*
+```
+
+This section must always be included. If the YAML has only 2–3 nodes (a trivially simple
+workflow), still generate the diagram — it is quick and gives users an at-a-glance view.
 
 ---
 

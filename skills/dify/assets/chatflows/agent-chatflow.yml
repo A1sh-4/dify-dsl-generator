@@ -1,13 +1,19 @@
 app:
-  description: A research agent chatflow that uses an LLM with structured reasoning
-    instructions to investigate topics across science, law, history, medicine, and
-    the arts — producing well-organized, markdown-formatted answers.
-  icon: "\U0001F52C"
-  icon_background: '#EDE9FE'
+  description: A research agent chatflow combining knowledge retrieval with an agent
+    node (function-calling strategy, 5 iterations) and built-in tools — web scraper,
+    Wikipedia search, and current time — to investigate any topic and deliver structured,
+    markdown-formatted answers.
+  icon: 🤖
+  icon_background: '#FFEAD5'
   mode: advanced-chat
   name: Agent Chatflow
   use_icon_as_answer_icon: false
-dependencies: []
+dependencies:
+- current_identifier: null
+  type: marketplace
+  value:
+    marketplace_plugin_unique_identifier: langgenius/openai_api_compatible:0.0.51@20a0511b3ac00ad81524ff7479b9f5e8bbd456e0590d4931b41c8dd82bee7192
+    version: null
 kind: app
 version: 0.5.0
 workflow:
@@ -16,17 +22,17 @@ workflow:
   features:
     file_upload:
       allowed_file_extensions:
-        - .JPG
-        - .JPEG
-        - .PNG
-        - .GIF
-        - .WEBP
-        - .SVG
+      - .JPG
+      - .JPEG
+      - .PNG
+      - .GIF
+      - .WEBP
+      - .SVG
       allowed_file_types:
-        - image
+      - image
       allowed_file_upload_methods:
-        - local_file
-        - remote_url
+      - local_file
+      - remote_url
       enabled: false
       fileUploadConfig:
         attachment_image_file_size_limit: 2
@@ -43,37 +49,17 @@ workflow:
         enabled: false
         number_limits: 3
         transfer_methods:
-          - local_file
-          - remote_url
+        - local_file
+        - remote_url
       number_limits: 3
-    opening_statement: |
-      <div style="font-family:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif; max-width:680px; padding:20px; border-radius:12px; box-shadow:0 6px 20px rgba(0,0,0,0.06); background:linear-gradient(180deg,#ffffff,#f8fafc); border:1px solid #e2e8f0;">
-        <div style="display:flex; align-items:center; gap:12px; margin-bottom:12px; padding-bottom:12px; border-bottom:1px solid #eef2f6;">
-          <div style="background:#7c3aed; color:white; font-weight:700; padding:4px 10px; border-radius:6px; font-size:12px; letter-spacing:0.5px;">RESEARCH</div>
-          <div style="color:#0f172a; font-size:14px; font-weight:600;">🔬 Deep-dive research on any topic</div>
-        </div>
-        <div style="font-size:13px; color:#334155; line-height:1.6;">
-          <p style="margin:0 0 10px 0;">Ask any question and this chatflow will investigate thoroughly — drawing on broad knowledge across disciplines to produce structured, well-reasoned answers.</p>
-          <div style="display:flex; flex-wrap:wrap; gap:6px; margin-bottom:14px;">
-            <span style="background:#ede9fe; color:#7c3aed; border:1px solid #c4b5fd; padding:4px 10px; border-radius:20px; font-size:11px; font-weight:600;">🔭 Science & Tech</span>
-            <span style="background:#ede9fe; color:#7c3aed; border:1px solid #c4b5fd; padding:4px 10px; border-radius:20px; font-size:11px; font-weight:600;">⚖️ Law & Policy</span>
-            <span style="background:#ede9fe; color:#7c3aed; border:1px solid #c4b5fd; padding:4px 10px; border-radius:20px; font-size:11px; font-weight:600;">🏛️ History</span>
-            <span style="background:#ede9fe; color:#7c3aed; border:1px solid #c4b5fd; padding:4px 10px; border-radius:20px; font-size:11px; font-weight:600;">🩺 Medicine</span>
-            <span style="background:#ede9fe; color:#7c3aed; border:1px solid #c4b5fd; padding:4px 10px; border-radius:20px; font-size:11px; font-weight:600;">🎨 Arts & Culture</span>
-          </div>
-          <p style="margin:0;">Type your question below to get a structured, well-sourced research answer.</p>
-        </div>
-      </div>
+    opening_statement: ''
     retriever_resource:
-      enabled: false
+      enabled: true
     sensitive_word_avoidance:
       enabled: false
     speech_to_text:
       enabled: false
-    suggested_questions:
-      - What caused the 2008 financial crisis and what reforms followed?
-      - Explain how mRNA vaccines work and how they differ from traditional vaccines
-      - What are the key differences between common law and civil law legal systems?
+    suggested_questions: []
     suggested_questions_after_answer:
       enabled: false
     text_to_speech:
@@ -82,170 +68,496 @@ workflow:
       voice: ''
   graph:
     edges:
-      - data:
-          isInLoop: false
-          sourceType: start
-          targetType: llm
-        id: 1718007000001-source-1718007000002-target
-        source: '1718007000001'
-        sourceHandle: source
-        target: '1718007000002'
-        targetHandle: target
-        type: custom
-        zIndex: 0
-      - data:
-          isInLoop: false
-          sourceType: llm
-          targetType: template-transform
-        id: 1718007000002-source-1718007000003-target
-        source: '1718007000002'
-        sourceHandle: source
-        target: '1718007000003'
-        targetHandle: target
-        type: custom
-        zIndex: 0
-      - data:
-          isInLoop: false
-          sourceType: template-transform
-          targetType: answer
-        id: 1718007000003-source-1718007000004-target
-        source: '1718007000003'
-        sourceHandle: source
-        target: '1718007000004'
-        targetHandle: target
-        type: custom
-        zIndex: 0
+    - data:
+        isInLoop: false
+        sourceType: agent
+        targetType: answer
+      id: 1779773247200-source-answer-target
+      source: '1779773247200'
+      sourceHandle: source
+      target: answer
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: start
+        targetType: knowledge-retrieval
+      id: 1779773042115-source-1779773834885-target
+      source: '1779773042115'
+      sourceHandle: source
+      target: '1779773834885'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: knowledge-retrieval
+        targetType: agent
+      id: 1779773834885-source-1779773247200-target
+      source: '1779773834885'
+      sourceHandle: source
+      target: '1779773247200'
+      targetHandle: target
+      type: custom
+      zIndex: 0
     nodes:
-      - data:
-          desc: Entry point — receives the user's research query via the chat input
-          selected: false
-          title: Start
-          type: start
-          variables: []
-        height: 54
-        id: '1718007000001'
-        position:
-          x: 80
-          y: 282
-        positionAbsolute:
-          x: 80
-          y: 282
+    - data:
         selected: false
-        sourcePosition: right
-        targetPosition: left
-        type: custom
-        width: 244
-      - data:
+        title: User Input
+        type: start
+        variables: []
+      height: 75
+      id: '1779773042115'
+      position:
+        x: 80
+        y: 261
+      positionAbsolute:
+        x: 80
+        y: 261
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 243
+    - data:
+        dataset_ids:
+        - YOUR_DATASET_ID_HERE
+        metadata_filtering_mode: disabled
+        metadata_model_config:
+          completion_params:
+            temperature: 0.7
+          mode: chat
+          name: Claude-4-Sonnet
+          provider: langgenius/openai_api_compatible/openai_api_compatible
+        multiple_retrieval_config:
+          reranking_enable: false
+          reranking_mode: weighted_score
+          top_k: 4
+          weights:
+            keyword_setting:
+              keyword_weight: 0.3
+            vector_setting:
+              embedding_model_name: text-embedding-3-small
+              embedding_provider_name: openai
+              vector_weight: 0.7
+            weight_type: customized
+        query_attachment_selector: []
+        query_variable_selector:
+        - '1779773042115'
+        - sys.query
+        retrieval_mode: multiple
+        selected: false
+        title: Knowledge Retrieval
+        type: knowledge-retrieval
+      height: 92
+      id: '1779773834885'
+      position:
+        x: 380
+        y: 282
+      positionAbsolute:
+        x: 380
+        y: 282
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 243
+    - data:
+        agent_parameters:
           context:
-            enabled: false
-            variable_selector: []
-          desc: Research agent LLM — structured reasoning across science, law, history,
-            medicine, and the arts
-          memory:
-            query_prompt_template: '{{#sys.query#}}'
-            role_prefix:
-              assistant: ''
-              user: ''
-            window:
-              enabled: false
-              size: 50
+            type: variable
+            value:
+            - '1779773834885'
+            - result
+          instruction:
+            type: constant
+            value: 'You are an expert research agent. When given a question:
+
+              1. Search for relevant, up-to-date information using your tools
+
+              2. Cross-reference multiple sources where possible
+
+              3. Synthesize findings into a clear, structured answer
+
+              4. Use markdown headings and bullet points for readability
+
+              5. Be honest if information is uncertain or unavailable
+
+
+              Always search before answering — do not rely solely on prior knowledge.'
+          maximum_iterations:
+            type: constant
+            value: 5
           model:
-            completion_params:
-              max_tokens: 4096
-              temperature: 0.5
-            mode: chat
-            name: claude-sonnet-4-6
-            provider: anthropic
-          prompt_template:
-            - edition_type: basic
-              id: 8b8089d4-0415-40f3-8d3b-5b1c6e981a3d
-              role: system
-              text: "You are an expert research agent with broad knowledge across science,\
-                \ technology, history, law, medicine, and the arts.\n\nWhen answering\
-                \ a question, follow this structured approach:\n\n1. **Understand**\
-                \ — Restate the core question in your own words to confirm understanding.\n\
-                2. **Research** — Draw on your knowledge to gather relevant facts,\
-                \ dates, definitions, and context.\n3. **Analyze** — Synthesize the\
-                \ information, identify key themes, and evaluate conflicting viewpoints\
-                \ if any.\n4. **Answer** — Provide a clear, well-structured response\
-                \ with appropriate detail.\n5. **Further reading** — Suggest sources,\
-                \ authors, or search terms the user might consult.\n\nAlways be honest\
-                \ about uncertainty. If you don't know something, say so clearly rather\
-                \ than guessing. Format responses with markdown headings and bullet\
-                \ points where appropriate."
-            - edition_type: basic
-              id: a51ad097-acaf-4dd9-847b-753e01df6aac
-              role: user
-              text: '{{#sys.query#}}'
-          retry_config:
-            max_retries: 3
-            retry_enabled: true
-            retry_interval: 1000
-          selected: false
-          structured_output: {}
-          structured_output_enabled: false
-          title: Research Agent
-          type: llm
-          variables: []
-          vision:
+            type: constant
+            value:
+              completion_params: {}
+              mode: chat
+              model: Claude-4-Sonnet
+              model_type: llm
+              provider: langgenius/openai_api_compatible/openai_api_compatible
+              type: model-selector
+          query:
+            type: constant
+            value: '{{#sys.query#}}'
+          tools:
+            type: constant
+            value:
+            - enabled: true
+              extra:
+                description: A tool for scraping webpages.
+              parameters:
+                url:
+                  auto: 1
+                  value: null
+              provider_name: webscraper
+              provider_show_name: webscraper
+              schemas:
+              - auto_generate: null
+                default: null
+                form: llm
+                human_description:
+                  en_US: used for linking to webpages
+                  ja_JP: used for linking to webpages
+                  pt_BR: used for linking to webpages
+                  zh_Hans: 用于链接到网页
+                label:
+                  en_US: URL
+                  ja_JP: URL
+                  pt_BR: URL
+                  zh_Hans: 网页链接
+                llm_description: url for scraping
+                max: null
+                min: null
+                name: url
+                options: []
+                placeholder: null
+                precision: null
+                required: true
+                scope: null
+                template: null
+                type: string
+              - auto_generate: null
+                default: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36
+                  (KHTML, like Gecko) Chrome/100.0.1000.0 Safari/537.36
+                form: form
+                human_description:
+                  en_US: used for identifying the browser.
+                  ja_JP: used for identifying the browser.
+                  pt_BR: used for identifying the browser.
+                  zh_Hans: 用于识别浏览器。
+                label:
+                  en_US: User Agent
+                  ja_JP: User Agent
+                  pt_BR: User Agent
+                  zh_Hans: User Agent
+                llm_description: null
+                max: null
+                min: null
+                name: user_agent
+                options: []
+                placeholder: null
+                precision: null
+                required: false
+                scope: null
+                template: null
+                type: string
+              - auto_generate: null
+                default: 'false'
+                form: form
+                human_description:
+                  en_US: If true, the crawler will only return the page summary content.
+                  ja_JP: If true, the crawler will only return the page summary content.
+                  pt_BR: If true, the crawler will only return the page summary content.
+                  zh_Hans: 如果启用，爬虫将仅返回页面摘要内容。
+                label:
+                  en_US: Whether to generate summary
+                  ja_JP: Whether to generate summary
+                  pt_BR: Whether to generate summary
+                  zh_Hans: 是否生成摘要
+                llm_description: null
+                max: null
+                min: null
+                name: generate_summary
+                options:
+                - icon: null
+                  label:
+                    en_US: 'Yes'
+                    ja_JP: 'Yes'
+                    pt_BR: 'Yes'
+                    zh_Hans: 是
+                  value: 'true'
+                - icon: null
+                  label:
+                    en_US: 'No'
+                    ja_JP: 'No'
+                    pt_BR: 'No'
+                    zh_Hans: 否
+                  value: 'false'
+                placeholder: null
+                precision: null
+                required: false
+                scope: null
+                template: null
+                type: boolean
+              settings:
+                generate_summary:
+                  value:
+                    type: constant
+                    value: 'false'
+                user_agent:
+                  value:
+                    type: mixed
+                    value: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36
+                      (KHTML, like Gecko) Chrome/100.0.1000.0 Safari/537.36
+              tool_description: A tool for scraping webpages.
+              tool_label: Web Scraper
+              tool_name: webscraper
+              type: builtin
+            - enabled: true
+              extra:
+                description: A tool for getting the current time.
+              parameters: {}
+              provider_name: time
+              provider_show_name: time
+              schemas:
+              - auto_generate: null
+                default: '%Y-%m-%d %H:%M:%S'
+                form: form
+                human_description:
+                  en_US: Time format in strftime standard.
+                  ja_JP: Time format in strftime standard.
+                  pt_BR: Time format in strftime standard.
+                  zh_Hans: strftime 标准的时间格式。
+                label:
+                  en_US: Format
+                  ja_JP: Format
+                  pt_BR: Format
+                  zh_Hans: 格式
+                llm_description: null
+                max: null
+                min: null
+                name: format
+                options: []
+                placeholder: null
+                precision: null
+                required: false
+                scope: null
+                template: null
+                type: string
+              - auto_generate: null
+                default: UTC
+                form: form
+                human_description:
+                  en_US: Timezone
+                  ja_JP: Timezone
+                  pt_BR: Timezone
+                  zh_Hans: 时区
+                label:
+                  en_US: Timezone
+                  ja_JP: Timezone
+                  pt_BR: Timezone
+                  zh_Hans: 时区
+                llm_description: null
+                max: null
+                min: null
+                name: timezone
+                options:
+                - icon: null
+                  label:
+                    en_US: UTC
+                    ja_JP: UTC
+                    pt_BR: UTC
+                    zh_Hans: UTC
+                  value: UTC
+                - icon: null
+                  label:
+                    en_US: Asia/Tokyo
+                    ja_JP: Asia/Tokyo
+                    pt_BR: Asia/Tokyo
+                    zh_Hans: 亚洲/东京
+                  value: Asia/Tokyo
+                - icon: null
+                  label:
+                    en_US: America/New_York
+                    ja_JP: America/New_York
+                    pt_BR: America/New_York
+                    zh_Hans: 美洲/纽约
+                  value: America/New_York
+                - icon: null
+                  label:
+                    en_US: Europe/London
+                    ja_JP: Europe/London
+                    pt_BR: Europe/London
+                    zh_Hans: 欧洲/伦敦
+                  value: Europe/London
+                placeholder: null
+                precision: null
+                required: false
+                scope: null
+                template: null
+                type: select
+              settings:
+                format:
+                  value:
+                    type: mixed
+                    value: '%Y-%m-%d %H:%M:%S'
+                timezone:
+                  value:
+                    type: constant
+                    value: UTC
+              tool_description: A tool for getting the current time.
+              tool_label: Current Time
+              tool_name: current_time
+              type: builtin
+            - enabled: true
+              extra:
+                description: A tool for performing a Wikipedia search and extracting
+                  snippets and webpages.
+              parameters:
+                language:
+                  auto: 1
+                  value: null
+                query:
+                  auto: 1
+                  value: null
+              provider_name: langgenius/wikipedia/wikipedia
+              provider_show_name: langgenius/wikipedia/wikipedia
+              schemas:
+              - auto_generate: null
+                default: null
+                form: llm
+                human_description:
+                  en_US: key words for searching
+                  ja_JP: key words for searching
+                  pt_BR: key words for searching
+                  zh_Hans: 查询关键词
+                label:
+                  en_US: Query string
+                  ja_JP: Query string
+                  pt_BR: Query string
+                  zh_Hans: 查询语句
+                llm_description: key words for searching, this should be in the language
+                  of "language" parameter
+                max: null
+                min: null
+                name: query
+                options: []
+                placeholder: null
+                precision: null
+                required: true
+                scope: null
+                template: null
+                type: string
+              - auto_generate: null
+                default: null
+                form: llm
+                human_description:
+                  en_US: The language of the Wikipedia to be searched
+                  ja_JP: The language of the Wikipedia to be searched
+                  pt_BR: The language of the Wikipedia to be searched
+                  zh_Hans: 要搜索的维基百科语言
+                label:
+                  en_US: Language
+                  ja_JP: Language
+                  pt_BR: Language
+                  zh_Hans: 语言
+                llm_description: language of the wikipedia to be searched, only "de"
+                  for German, "en" for English, "fr" for French, "hi" for Hindi, "ja"
+                  for Japanese, "ko" for Korean, "pl" for Polish, "pt" for Portuguese,
+                  "ro" for Romanian, "uk" for Ukrainian, "vi" for Vietnamese, and
+                  "zh" for Chinese are supported
+                max: null
+                min: null
+                name: language
+                options:
+                - icon: ''
+                  label:
+                    en_US: English
+                    ja_JP: English
+                    pt_BR: English
+                    zh_Hans: 英语
+                  value: en
+                - icon: ''
+                  label:
+                    en_US: Japanese
+                    ja_JP: Japanese
+                    pt_BR: Japanese
+                    zh_Hans: 日语
+                  value: ja
+                - icon: ''
+                  label:
+                    en_US: Chinese
+                    ja_JP: Chinese
+                    pt_BR: Chinese
+                    zh_Hans: 中文
+                  value: zh
+                placeholder: null
+                precision: null
+                required: true
+                scope: null
+                template: null
+                type: string
+              settings: {}
+              tool_description: A tool for performing a Wikipedia search and extracting
+                snippets and webpages.
+              tool_label: WikipediaSearch
+              tool_name: wikipedia_search
+              type: builtin
+        agent_strategy_label: FunctionCalling
+        agent_strategy_name: function_calling
+        agent_strategy_provider_name: langgenius/agent/agent
+        memory:
+          query_prompt_template: '{{#sys.query#}}
+
+
+            {{#sys.files#}}'
+          window:
             enabled: false
-        height: 98
-        id: '1718007000002'
-        position:
-          x: 380
-          y: 282
-        positionAbsolute:
-          x: 380
-          y: 282
+            size: 50
+        meta:
+          minimum_dify_version: 1.7.0
+          version: 0.0.2
+        output_schema: {}
+        plugin_unique_identifier: langgenius/agent:0.0.37@a5dcc6ea00bca23439b49ff7d65704f3f5dd6ce2ca353205e62278e2148d84b6
         selected: false
-        sourcePosition: right
-        targetPosition: left
-        type: custom
-        width: 244
-      - data:
-          desc: Passes the LLM's markdown research output through to the answer node
-          selected: false
-          template: '{{ research_output }}'
-          title: Format Research Output
-          type: template-transform
-          variables:
-            - value_selector:
-                - '1718007000002'
-                - text
-              variable: research_output
-        height: 54
-        id: '1718007000003'
-        position:
-          x: 680
-          y: 282
-        positionAbsolute:
-          x: 680
-          y: 282
+        title: Agent
+        tool_node_version: '2'
+        type: agent
+      height: 190
+      id: '1779773247200'
+      position:
+        x: 680
+        y: 282
+      positionAbsolute:
+        x: 680
+        y: 282
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 243
+    - data:
+        answer: '{{#1779773247200.text#}}'
         selected: false
-        sourcePosition: right
-        targetPosition: left
-        type: custom
-        width: 244
-      - data:
-          answer: '{{#1718007000003.output#}}'
-          desc: Streams the formatted research response to the user
-          selected: false
-          title: Answer
-          type: answer
-          variables: []
-        height: 107
-        id: '1718007000004'
-        position:
-          x: 980
-          y: 282
-        positionAbsolute:
-          x: 980
-          y: 282
-        selected: false
-        sourcePosition: right
-        targetPosition: left
-        type: custom
-        width: 244
+        title: Answer
+        type: answer
+        variables: []
+      height: 105
+      id: answer
+      position:
+        x: 980
+        y: 282
+      positionAbsolute:
+        x: 980
+        y: 282
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 243
     viewport:
       x: 0
       y: 0

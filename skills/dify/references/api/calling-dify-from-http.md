@@ -44,7 +44,7 @@ The following YAML block shows a complete HTTP node configuration for calling a 
   data:
     title: "Run Child Workflow"
     method: POST
-    url: "https://api.dify.ai/v1/workflows/run"
+    url: "{{#env.DIFY_BASE_URL#}}/workflows/run"
     authorization:
       type: bearer
       config:
@@ -157,7 +157,7 @@ Extract `workflow_run_id` in a Code node.
 Add a second HTTP node that calls:
 
 ```
-GET https://api.dify.ai/v1/workflows/run/{{#code_node_id.run_id#}}
+GET {{#env.DIFY_BASE_URL#}}/workflows/run/{{#code_node_id.run_id#}}
 ```
 
 With `Authorization: Bearer {{#env.DIFY_APP_API_KEY#}}` (no body needed for GET).

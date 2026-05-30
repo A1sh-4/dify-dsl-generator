@@ -13,7 +13,12 @@ app:
   mode: workflow                     # REQUIRED — do not change for workflows
   name: "# REPLACE: Your Workflow Name"
   use_icon_as_answer_icon: false
-dependencies: []                     # TODO: Add marketplace plugin entries here if tool nodes use plugins
+dependencies:                          # Add one entry per marketplace plugin used by LLM/tool nodes
+- current_identifier: null           # TODO: Replace with the real plugin entry from a Dify export
+  type: marketplace
+  value:
+    marketplace_plugin_unique_identifier: langgenius/openai_api_compatible:0.0.51@20a0511b3ac00ad81524ff7479b9f5e8bbd456e0590d4931b41c8dd82bee7192
+    version: null
 kind: app
 version: 0.5.0
 workflow:
@@ -70,6 +75,7 @@ workflow:
     edges:
       # Edge 1: Start → LLM
       - data:
+          isInIteration: false
           isInLoop: false
           sourceType: start          # TODO: Match the type string of the source node
           targetType: llm            # TODO: Match the type string of the target node
@@ -82,6 +88,7 @@ workflow:
         zIndex: 0
       # Edge 2: LLM → End
       - data:
+          isInIteration: false
           isInLoop: false
           sourceType: llm
           targetType: end
@@ -98,7 +105,6 @@ workflow:
       # Defines what inputs the workflow accepts.
       # -----------------------------------------------------------------
       - data:
-          desc: ""
           selected: false
           title: "Start"             # TODO: Rename if desired
           type: start
@@ -112,9 +118,9 @@ workflow:
               options: []            # TODO: Fill if type is "select"
               placeholder: ""
               required: true
-              type: text-input
+              type: paragraph        # paragraph for multi-line input; text-input for single-line
               variable: user_query   # TODO: Rename to match your domain
-        height: 90
+        height: 111
         id: "1718009000001"          # TODO: Must be unique — use 13-digit Unix ms timestamp
         position:
           x: 80
@@ -126,7 +132,7 @@ workflow:
         sourcePosition: right
         targetPosition: left
         type: custom
-        width: 244
+        width: 243
 
       # -----------------------------------------------------------------
       # NODE 2: LLM
@@ -136,55 +142,37 @@ workflow:
           context:
             enabled: false           # TODO: Set true and configure variable_selector if using RAG
             variable_selector: []
-          desc: ""
-          memory:
-            query_prompt_template: "{{#sys.query#}}"
-            role_prefix:
-              assistant: ""
-              user: ""
-            window:
-              enabled: false
-              size: 50
           model:
             completion_params:
               temperature: 0.7       # TODO: Lower for factual tasks, higher for creative
             mode: chat
-            name: Claude-4-Sonnet
+            name: GPT-4o             # TODO: Replace with your deployed model name
             provider: langgenius/openai_api_compatible/openai_api_compatible
           prompt_template:
-            - edition_type: basic
-              id: "00000000-0000-0000-0000-000000000001"  # TODO: Replace with a real UUIDv4
+            - id: "00000000-0000-0000-0000-000000000001"  # TODO: Replace with a real UUIDv4
               role: system
               text: "You are a helpful assistant."        # TODO: Write your system prompt
-            - edition_type: basic
-              id: "00000000-0000-0000-0000-000000000002"  # TODO: Replace with a real UUIDv4
+            - id: "00000000-0000-0000-0000-000000000002"  # TODO: Replace with a real UUIDv4
               role: user
               text: "{{#1718009000001.user_query#}}"      # TODO: Update variable reference
-          retry_config:
-            max_retries: 3
-            retry_enabled: true
-            retry_interval: 1000
           selected: false
-          structured_output: {}
-          structured_output_enabled: false
           title: "LLM"               # TODO: Give this node a descriptive name
           type: llm
-          variables: []
           vision:
             enabled: false           # TODO: Set true if accepting image inputs
-        height: 98
+        height: 90
         id: "1718009000002"
         position:
-          x: 380
+          x: 383
           y: 282
         positionAbsolute:
-          x: 380
+          x: 383
           y: 282
         selected: false
         sourcePosition: right
         targetPosition: left
         type: custom
-        width: 244
+        width: 243
 
       # -----------------------------------------------------------------
       # NODE 3: End
@@ -192,7 +180,6 @@ workflow:
       # REQUIRED for workflows — do not replace with "answer" node.
       # -----------------------------------------------------------------
       - data:
-          desc: ""
           outputs:
             - value_selector:
                 - "1718009000002"    # TODO: Must match the ID of the node producing the output
@@ -202,19 +189,18 @@ workflow:
           selected: false
           title: "End"
           type: end                  # REQUIRED for workflows — do not change to "answer"
-        height: 119
+        height: 90
         id: "1718009000003"
         position:
-          x: 680
+          x: 686
           y: 282
         positionAbsolute:
-          x: 680
+          x: 686
           y: 282
-        selected: false
         sourcePosition: right
         targetPosition: left
         type: custom
-        width: 244
+        width: 243
     viewport:
       x: 0
       y: 0

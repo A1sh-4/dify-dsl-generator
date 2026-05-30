@@ -1,0 +1,1413 @@
+# GROUND-TRUTH SYNTAX REFERENCE - Knowledge Base ingestion (upsert) workflow.
+# Real exported Dify workflow that writes/updates a Knowledge Base via the Dataset API.
+# Use this ONLY for the exact API call + payload SYNTAX (create-by-text, segment create/update,
+# pagination, parent-child payload). The TOPOLOGY here (parent-child hierarchical) is ONE
+# example - choose the chunking mode + delimiters per the data; see
+# references/patterns/knowledge-base-ingestion.md. Secrets and instance domain are scrubbed:
+# set env vars (dataset API key, dataset ID) and the base URL after import.
+app:
+  description: ''
+  icon: 🤖
+  icon_background: '#FFEAD5'
+  mode: workflow
+  name: DX_Suite_KB
+  use_icon_as_answer_icon: false
+dependencies: []
+kind: app
+version: 0.5.0
+workflow:
+  conversation_variables: []
+  environment_variables:
+  - description: ''
+    id: 1be8c7c9-e7bc-4b47-b38e-abda4aa755d0
+    name: KB_API
+    selector:
+    - env
+    - KB_API
+    value: ''
+    value_type: secret
+  - description: ''
+    id: 377d9b1d-d962-4a45-bebf-4908dba712df
+    name: DB_ID
+    selector:
+    - env
+    - DB_ID
+    value: ''
+    value_type: secret
+  features:
+    file_upload:
+      allowed_file_extensions:
+      - .JPG
+      - .JPEG
+      - .PNG
+      - .GIF
+      - .WEBP
+      - .SVG
+      allowed_file_types:
+      - image
+      allowed_file_upload_methods:
+      - local_file
+      - remote_url
+      enabled: false
+      fileUploadConfig:
+        attachment_image_file_size_limit: 2
+        audio_file_size_limit: 50
+        batch_count_limit: 5
+        file_size_limit: 15
+        file_upload_limit: 20
+        image_file_batch_limit: 10
+        image_file_size_limit: 5
+        single_chunk_attachment_limit: 10
+        video_file_size_limit: 100
+        workflow_file_upload_limit: 10
+      image:
+        enabled: false
+        number_limits: 3
+        transfer_methods:
+        - local_file
+        - remote_url
+      number_limits: 3
+    opening_statement: ''
+    retriever_resource:
+      enabled: true
+    sensitive_word_avoidance:
+      enabled: false
+    speech_to_text:
+      enabled: false
+    suggested_questions: []
+    suggested_questions_after_answer:
+      enabled: false
+    text_to_speech:
+      enabled: false
+      language: ''
+      voice: ''
+  graph:
+    edges:
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: start
+        targetType: code
+      id: 1776841032661-source-1776841038892-target
+      selected: false
+      source: '1776841032661'
+      sourceHandle: source
+      target: '1776841038892'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: code
+        targetType: if-else
+      id: 1776841038892-source-1776841146006-target
+      selected: false
+      source: '1776841038892'
+      sourceHandle: source
+      target: '1776841146006'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: if-else
+        targetType: document-extractor
+      id: 1776841146006-true-1776841176986-target
+      selected: false
+      source: '1776841146006'
+      sourceHandle: 'true'
+      target: '1776841176986'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: document-extractor
+        targetType: code
+      id: 1776841176986-source-1776841190697-target
+      selected: false
+      source: '1776841176986'
+      sourceHandle: source
+      target: '1776841190697'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: code
+        targetType: code
+      id: 1776841190697-source-1776841279803-target
+      selected: false
+      source: '1776841190697'
+      sourceHandle: source
+      target: '1776841279803'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: code
+        targetType: if-else
+      id: 1776841279803-source-1776841516900-target
+      selected: false
+      source: '1776841279803'
+      sourceHandle: source
+      target: '1776841516900'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: if-else
+        targetType: end
+      id: 1776841516900-578620ed-2750-4404-a9c1-d48940330bab-1776841626453-target
+      selected: false
+      source: '1776841516900'
+      sourceHandle: 578620ed-2750-4404-a9c1-d48940330bab
+      target: '1776841626453'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: if-else
+        targetType: code
+      id: 1776841516900-532d8218-94e7-4a97-a27a-0432b8bca98a-1776920595602-target
+      selected: false
+      source: '1776841516900'
+      sourceHandle: 532d8218-94e7-4a97-a27a-0432b8bca98a
+      target: '1776920595602'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: code
+        targetType: http-request
+      id: 1776920595602-source-1776929786460-target
+      selected: false
+      source: '1776920595602'
+      sourceHandle: source
+      target: '1776929786460'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInLoop: false
+        sourceType: if-else
+        targetType: code
+      id: 1776841516900-true-1776843294741-target
+      source: '1776841516900'
+      sourceHandle: 'true'
+      target: '1776843294741'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: code
+        targetType: code
+      id: 1776843294741-source-1776933131965-target
+      source: '1776843294741'
+      sourceHandle: source
+      target: '1776933131965'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: http-request
+        targetType: end
+      id: 1776929786460-source-1776933721948-target
+      source: '1776929786460'
+      sourceHandle: source
+      target: '1776933721948'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: code
+        targetType: iteration
+      id: 1776933131965-source-1776996801351-target
+      source: '1776933131965'
+      sourceHandle: source
+      target: '1776996801351'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: code
+        targetType: iteration
+      id: 1776933131965-source-1776996805658-target
+      source: '1776933131965'
+      sourceHandle: source
+      target: '1776996805658'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: true
+        isInLoop: false
+        iteration_id: '1776996801351'
+        sourceType: iteration-start
+        targetType: code
+      id: 1776996801351start-source-1776996898352-target
+      source: 1776996801351start
+      sourceHandle: source
+      target: '1776996898352'
+      targetHandle: target
+      type: custom
+      zIndex: 1002
+    - data:
+        isInIteration: true
+        isInLoop: false
+        iteration_id: '1776996801351'
+        sourceType: code
+        targetType: http-request
+      id: 1776996898352-source-1776996904945-target
+      source: '1776996898352'
+      sourceHandle: source
+      target: '1776996904945'
+      targetHandle: target
+      type: custom
+      zIndex: 1002
+    - data:
+        isInIteration: true
+        isInLoop: false
+        iteration_id: '1776996805658'
+        sourceType: iteration-start
+        targetType: code
+      id: 1776996805658start-source-1776997377831-target
+      source: 1776996805658start
+      sourceHandle: source
+      target: '1776997377831'
+      targetHandle: target
+      type: custom
+      zIndex: 1002
+    - data:
+        isInIteration: true
+        isInLoop: false
+        iteration_id: '1776996805658'
+        sourceType: code
+        targetType: http-request
+      id: 1776997377831-source-1776997430479-target
+      source: '1776997377831'
+      sourceHandle: source
+      target: '1776997430479'
+      targetHandle: target
+      type: custom
+      zIndex: 1002
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: iteration
+        targetType: end
+      id: 1776996805658-source-1776998297814-target
+      source: '1776996805658'
+      sourceHandle: source
+      target: '1776998297814'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: iteration
+        targetType: end
+      id: 1776996801351-source-1776998300565-target
+      source: '1776996801351'
+      sourceHandle: source
+      target: '1776998300565'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    nodes:
+    - data:
+        selected: false
+        title: User Input
+        type: start
+        variables:
+        - allowed_file_extensions:
+          - .xlsx
+          - .csv
+          allowed_file_types:
+          - custom
+          allowed_file_upload_methods:
+          - local_file
+          - remote_url
+          default: ''
+          hint: ''
+          label: File
+          max_length: 48
+          options: []
+          placeholder: ''
+          required: true
+          type: file
+          variable: File
+      height: 109
+      id: '1776841032661'
+      position:
+        x: 264.6820339026938
+        y: 282
+      positionAbsolute:
+        x: 264.6820339026938
+        y: 282
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+    - data:
+        code: "import re\n\ndef main(file_name:str, file_extension: str):\n    \n\
+          \    # Initialize our default output variables\n    is_valid_format = False\n\
+          \    target_year_month = \"\"\n    error_message = \"\"\n    \n    # Check\
+          \ 1: Is it an allowed file extension?\n    if file_extension not in [\"\
+          .xlsx\", \".csv\"]:\n        error_message = f\"Error: Invalid file extension\
+          \ '{file_extension}'. Only .xlsx or .csv are allowed.\"\n        return\
+          \ {\n            \"is_valid_format\": is_valid_format,\n            \"target_year_month\"\
+          : target_year_month,\n            \"error_message\": error_message\n   \
+          \     }\n        \n    # Check 2: Does the name exactly match YYYYMM_DXSuite利用実績.xlsx\
+          \ / .csv?\n    # This Regex looks for exactly 4 digits, then 2 digits, then\
+          \ the exact Japanese string.\n    pattern = r\"^(\\d{4})(\\d{2})_DXSuite利用実績(\\\
+          .xlsx|\\.csv)$\"\n    match = re.match(pattern, file_name)\n    \n    if\
+          \ not match:\n        error_message = f\"Error: File name '{file_name}'\
+          \ does not match the standard format 'YYYYMM_DXSuite利用実績.xlsx'.\"\n    \
+          \    return {\n            \"is_valid_format\": is_valid_format,\n     \
+          \       \"target_year_month\": target_year_month,\n            \"error_message\"\
+          : error_message\n        }\n        \n    # Extract the Year and Month from\
+          \ the matched Regex\n    year = match.group(1)\n    month = match.group(2)\n\
+          \    \n    # Check 3: Is the month valid? (01 to 12)\n    if int(month)\
+          \ < 1 or int(month) > 12:\n        error_message = f\"Error: Invalid month\
+          \ '{month}' in file name. Month must be between 01 and 12.\"\n        return\
+          \ {\n            \"is_valid_format\": is_valid_format,\n            \"target_year_month\"\
+          : target_year_month,\n            \"error_message\": error_message\n   \
+          \     }\n        \n    # If all checks pass!\n    is_valid_format = True\n\
+          \    target_year_month = f\"{year}-{month}\"\n    \n    return {\n     \
+          \   \"is_valid_format\": is_valid_format,\n        \"target_year_month\"\
+          : target_year_month,\n        \"error_message\": error_message\n    }"
+        code_language: python3
+        outputs:
+          error_message:
+            children: null
+            type: string
+          is_valid_format:
+            children: null
+            type: boolean
+          target_year_month:
+            children: null
+            type: string
+        selected: false
+        title: Code
+        type: code
+        variables:
+        - value_selector:
+          - '1776841032661'
+          - File
+          - name
+          value_type: file
+          variable: file_name
+        - value_selector:
+          - '1776841032661'
+          - File
+          - extension
+          value_type: file
+          variable: file_extension
+      height: 52
+      id: '1776841038892'
+      position:
+        x: 524.6428666476706
+        y: 303
+      positionAbsolute:
+        x: 524.6428666476706
+        y: 303
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+    - data:
+        cases:
+        - case_id: 'true'
+          conditions:
+          - comparison_operator: is
+            id: 72804e2f-4d55-4d72-adf9-566be2a22c4c
+            value: true
+            varType: boolean
+            variable_selector:
+            - '1776841038892'
+            - is_valid_format
+          - comparison_operator: empty
+            id: 12bc3ab7-c7a1-4aea-85f4-9935334ffb6f
+            value: ''
+            varType: string
+            variable_selector:
+            - '1776841038892'
+            - error_message
+          id: 'true'
+          logical_operator: and
+        selected: false
+        title: IF/ELSE
+        type: if-else
+      height: 150
+      id: '1776841146006'
+      position:
+        x: 787.6456275140727
+        y: 303
+      positionAbsolute:
+        x: 787.6456275140727
+        y: 303
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+    - data:
+        is_array_file: false
+        selected: true
+        title: Doc Extractor
+        type: document-extractor
+        variable_selector:
+        - '1776841032661'
+        - File
+      height: 105
+      id: '1776841176986'
+      position:
+        x: 1044.7807384049693
+        y: 303
+      positionAbsolute:
+        x: 1044.7807384049693
+        y: 303
+      selected: true
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+    - data:
+        code: "import re\n\ndef main(target_year_month: str, text: str):\n    # 1.\
+          \ Date Extraction and Fallback Logic\n    # Look for patterns like \"2025年4月\"\
+          \ (2025 Year 4 Month)\n    date_match = re.search(r\"(\\d{4})年(\\d{1,2})月\"\
+          , text)\n    if date_match:\n        year = date_match.group(1)\n      \
+          \  month = date_match.group(2).zfill(2) # Formats \"4\" to \"04\"\n    \
+          \    final_year_month = f\"{year}-{month}\"\n    else:\n        final_year_month\
+          \ = target_year_month\n        \n    # 2. Dynamic Column Detection (Header\
+          \ Mapping)\n    lines = text.strip().split('\\n')\n    \n    # These are\
+          \ the exact Japanese column headers we need to find\n    target_keys = [\n\
+          \        \"EU名\", \"プラン\", \"総リクエスト\", \"文字あり\", \n        \"空欄\", \"CBあり\"\
+          , \"CBなし\", \"エントリー\", \n        \"ElasticSorter\", \"全文読取\"\n    ]\n  \
+          \  \n    col_map = {}\n    data_rows = []\n    \n    for line in lines:\n\
+          \        line = line.strip()\n        if not line.startswith('|'):\n   \
+          \         continue\n            \n        # Split the markdown row into\
+          \ cells and remove whitespace\n        cells = [cell.strip() for cell in\
+          \ line.split('|')][1:-1]\n        \n        # Skip the markdown separator\
+          \ line (e.g., | --- |)\n        if len(cells) > 0 and cells[0].startswith('---'):\n\
+          \            continue\n            \n        # Scan the cells to dynamically\
+          \ map which keyword is in which column index\n        for i, cell in enumerate(cells):\n\
+          \            for key in target_keys:\n                if key in cell and\
+          \ key not in col_map:\n                    col_map[key] = i\n          \
+          \          \n        # 3. Data Row Extraction\n        # Only start processing\
+          \ rows once we have found the indices for Company Name and Plan\n      \
+          \  if \"EU名\" in col_map and \"プラン\" in col_map:\n            eu_idx = col_map[\"\
+          EU名\"]\n            \n            # Prevent list out-of-bounds errors\n\
+          \            if eu_idx < len(cells):\n                eu_val = cells[eu_idx]\n\
+          \                \n                # Exclude the header row itself, empty\
+          \ rows, or \"nan\" rows\n                if eu_val and eu_val != \"EU名\"\
+          \ and eu_val.lower() != \"nan\":\n                    row_data = {}\n  \
+          \                  \n                    for key in target_keys:\n     \
+          \                   idx = col_map.get(key)\n                        if idx\
+          \ is not None and idx < len(cells):\n                            val = cells[idx]\n\
+          \                            # Convert \"nan\" or empty numerical cells\
+          \ to \"0\"\n                            if val.lower() == 'nan' or val ==\
+          \ '':\n                                val = '0'\n                     \
+          \       row_data[key] = val\n                        else:\n           \
+          \                 row_data[key] = '0'\n                            \n  \
+          \                  data_rows.append(row_data)\n                    \n  \
+          \  return {\n        \"extracted_year_month\": final_year_month,\n     \
+          \   \"company_data\": data_rows\n    }"
+        code_language: python3
+        outputs:
+          company_data:
+            children: null
+            type: array[object]
+          extracted_year_month:
+            children: null
+            type: string
+        selected: false
+        title: Code 2
+        type: code
+        variables:
+        - value_selector:
+          - '1776841038892'
+          - target_year_month
+          value_type: string
+          variable: target_year_month
+        - value_selector:
+          - '1776841176986'
+          - text
+          value_type: string
+          variable: text
+      height: 52
+      id: '1776841190697'
+      position:
+        x: 1311.3653311974767
+        y: 303
+      positionAbsolute:
+        x: 1311.3653311974767
+        y: 303
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+    - data:
+        code: "import requests\n\ndef main(extracted_year_month: str, dataset_id:\
+          \ str, api_key: str):\n    # 1. Calculate the Financial Year Document Name\n\
+          \    parts = extracted_year_month.split(\"-\")\n    if len(parts) == 2:\n\
+          \        year = int(parts[0])\n        month = int(parts[1])\n        if\
+          \ month >= 4:\n            target_document_name = f\"FY{year}-{year + 1}\"\
+          \n        else:\n            target_document_name = f\"FY{year - 1}-{year}\"\
+          \n    else:\n        target_document_name = \"FY_Unknown\"\n\n    # 2. Initialize\
+          \ default outputs\n    exists = False\n    doc_id = \"\"\n    error_message\
+          \ = \"\"\n\n    # 3. Call the Dify Knowledge Base API\n    url = f\"https://<your-dify-domain>/v1/datasets/{dataset_id}/documents\"\
+          \n    headers = {\n        \"Authorization\": f\"Bearer {api_key}\"\n  \
+          \  }\n    # We pull up to 100 documents to search through\n    params =\
+          \ {\n        \"limit\": 100 \n    }\n\n    try:\n        response = requests.get(url,\
+          \ headers=headers, params=params)\n        \n        # 4. Check the response\
+          \ and find the document\n        if response.status_code == 200:\n     \
+          \       data = response.json()\n            documents = data.get(\"data\"\
+          , [])\n            \n            # Loop through documents to see if our\
+          \ FY document exists\n            for doc in documents:\n              \
+          \  if doc.get(\"name\") == target_document_name:\n                    exists\
+          \ = True\n                    doc_id = doc.get(\"id\")\n               \
+          \     break\n        else:\n            error_message = f\"API Error: {response.status_code}\
+          \ - {response.text}\"\n            \n    except Exception as e:\n      \
+          \  error_message = str(e)\n\n    return {\n        \"exists\": exists,\n\
+          \        \"exisitng_doc_id\": doc_id,\n        \"target_document_name\"\
+          : target_document_name,\n        \"error_message\": error_message\n    }"
+        code_language: python3
+        outputs:
+          error_message:
+            children: null
+            type: string
+          exisitng_doc_id:
+            children: null
+            type: string
+          exists:
+            children: null
+            type: boolean
+          target_document_name:
+            children: null
+            type: string
+        selected: false
+        title: Code 3
+        type: code
+        variables:
+        - value_selector:
+          - '1776841190697'
+          - extracted_year_month
+          value_type: string
+          variable: extracted_year_month
+        - value_selector:
+          - env
+          - DB_ID
+          value_type: secret
+          variable: dataset_id
+        - value_selector:
+          - env
+          - KB_API
+          value_type: secret
+          variable: api_key
+      height: 52
+      id: '1776841279803'
+      position:
+        x: 1584.4727449358984
+        y: 303
+      positionAbsolute:
+        x: 1584.4727449358984
+        y: 303
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+    - data:
+        cases:
+        - case_id: 'true'
+          conditions:
+          - comparison_operator: is
+            id: b6e0a13b-31f9-43fc-a7f8-b02975e9615e
+            value: true
+            varType: boolean
+            variable_selector:
+            - '1776841279803'
+            - exists
+          - comparison_operator: empty
+            id: bf4a887f-3a1b-43ee-a03c-e060bb4ff408
+            value: ''
+            varType: string
+            variable_selector:
+            - '1776841279803'
+            - error_message
+          - comparison_operator: not empty
+            id: d9293314-2a04-4e5a-8f7f-f6cb1132c7dc
+            value: ''
+            varType: string
+            variable_selector:
+            - '1776841279803'
+            - exisitng_doc_id
+          id: 'true'
+          logical_operator: and
+        - case_id: 532d8218-94e7-4a97-a27a-0432b8bca98a
+          conditions:
+          - comparison_operator: is
+            id: 9d9fed24-e874-427a-a094-419b5e8839d1
+            value: false
+            varType: boolean
+            variable_selector:
+            - '1776841279803'
+            - exists
+          - comparison_operator: empty
+            id: 16789db9-2158-4a85-8e65-0f8716c54afa
+            value: ''
+            varType: string
+            variable_selector:
+            - '1776841279803'
+            - error_message
+          - comparison_operator: empty
+            id: 4e134ed1-8104-4599-95f2-61866adf649a
+            value: ''
+            varType: string
+            variable_selector:
+            - '1776841279803'
+            - exisitng_doc_id
+          id: 532d8218-94e7-4a97-a27a-0432b8bca98a
+          logical_operator: and
+        - case_id: 578620ed-2750-4404-a9c1-d48940330bab
+          conditions:
+          - comparison_operator: is
+            id: 50895160-163e-4f7a-b5bc-ed2098701497
+            value: false
+            varType: boolean
+            variable_selector:
+            - '1776841279803'
+            - exists
+          - comparison_operator: not empty
+            id: 253bd133-5783-490c-9c3d-f97d4fb3f196
+            value: ''
+            varType: string
+            variable_selector:
+            - '1776841279803'
+            - error_message
+          id: 578620ed-2750-4404-a9c1-d48940330bab
+          logical_operator: and
+        selected: false
+        title: IF/ELSE 2
+        type: if-else
+      height: 350
+      id: '1776841516900'
+      position:
+        x: 1842.556603846525
+        y: 303
+      positionAbsolute:
+        x: 1842.556603846525
+        y: 303
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+    - data:
+        outputs:
+        - value_selector:
+          - '1776841279803'
+          - error_message
+          value_type: string
+          variable: error_message
+        selected: false
+        title: Output 2
+        type: end
+      height: 89
+      id: '1776841626453'
+      position:
+        x: 2122.961668719817
+        y: 535.3283702232403
+      positionAbsolute:
+        x: 2122.961668719817
+        y: 535.3283702232403
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+    - data:
+        code: "import requests\n\ndef main(doc_id: str, dataset_id: str, api_key:\
+          \ str):\n    url = f\"https://<your-dify-domain>/v1/datasets/{dataset_id}/documents/{doc_id}/segments\"\
+          \n    \n    headers = {\n        \"Authorization\": f\"Bearer {api_key}\"\
+          ,\n        \"Content-Type\": \"application/json\"\n    }\n    \n    all_segments\
+          \ = []\n    success = False\n    error_message = \"\"\n    \n    # 1. Setup\
+          \ Pagination Variables\n    page = 1\n    has_more = True\n    \n    try:\n\
+          \        # 2. Loop until we fetch every single page\n        while has_more:\n\
+          \            params = {\n                \"status\": \"completed\",\n  \
+          \              \"limit\": 100, # Safely hit the Dify maximum\n         \
+          \       \"page\": page\n            }\n            \n            response\
+          \ = requests.get(url, headers=headers, params=params)\n            \n  \
+          \          if response.status_code == 200:\n                data = response.json()\n\
+          \                \n                # Add the current page's chunks to our\
+          \ master list\n                current_page_segments = data.get(\"data\"\
+          , [])\n                all_segments.extend(current_page_segments)\n    \
+          \            \n                # Check if Dify says there is another page\
+          \ waiting\n                has_more = data.get(\"has_more\", False)\n  \
+          \              page += 1 \n                success = True\n            else:\n\
+          \                error_message = f\"API Error {response.status_code}: {response.text}\"\
+          \n                success = False\n                break # Stop the loop\
+          \ if we hit an error\n                \n    except Exception as e:\n   \
+          \     error_message = str(e)\n        success = False\n        \n    return\
+          \ {\n        \"existing_segments\": all_segments,\n        \"count\": len(all_segments),\n\
+          \        \"success\": success,\n        \"error_message\": error_message\n\
+          \    }"
+        code_language: python3
+        outputs:
+          count:
+            children: null
+            type: number
+          error_message:
+            children: null
+            type: string
+          existing_segments:
+            children: null
+            type: array[object]
+          success:
+            children: null
+            type: boolean
+        selected: false
+        title: 'list all the exisitng chunks '
+        type: code
+        variables:
+        - value_selector:
+          - '1776841279803'
+          - exisitng_doc_id
+          value_type: string
+          variable: doc_id
+        - value_selector:
+          - env
+          - DB_ID
+          value_type: secret
+          variable: dataset_id
+        - value_selector:
+          - env
+          - KB_API
+          value_type: secret
+          variable: api_key
+      height: 52
+      id: '1776843294741'
+      position:
+        x: 2122.961668719817
+        y: 334.3052225623138
+      positionAbsolute:
+        x: 2122.961668719817
+        y: 334.3052225623138
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+    - data:
+        code: "import json\n\ndef main(company_data: list, target_year_month: str,\
+          \ doc_name: str):\n    blocks = []\n    \n    # 1. Compile the text blocks\
+          \ without trailing separators\n    for company in company_data:\n      \
+          \  name = company.get(\"EU名\", \"Unknown\").strip()\n        plan = company.get(\"\
+          プラン\", \"Unknown\")\n        \n        usage_line = (\n            f\"{target_year_month}-{plan}:\
+          \ \"\n            f\"{company.get('総リクエスト', '0')}, \"\n            f\"{company.get('文字あり',\
+          \ '0')}, \"\n            f\"{company.get('空欄', '0')}, \"\n            f\"\
+          {company.get('CBあり', '0')}, \"\n            f\"{company.get('CBなし', '0')},\
+          \ \"\n            f\"{company.get('エントリー', '0')}, \"\n            f\"{company.get('ElasticSorter',\
+          \ '0')}, \"\n            f\"{company.get('全文読取', '0')}\"\n        )\n  \
+          \      \n        # Add just the raw text block for this company\n      \
+          \  blocks.append(f\"Company: {name}\\n{usage_line}\")\n\n    # Join all\
+          \ blocks with the separator. \n    # This guarantees NO trailing '###\\\
+          n' at the end of the document!\n    compiled_text = \"\\n###\\n\".join(blocks)\n\
+          \n    # 2. Build the STRICT API Payload\n    payload = {\n        \"name\"\
+          : doc_name,\n        \"text\": compiled_text.strip(),\n        \"indexing_technique\"\
+          : \"high_quality\",\n        \"doc_form\": \"hierarchical_model\",\n   \
+          \     \"doc_language\": \"Japanese\",\n        \"process_rule\": {\n   \
+          \         \"mode\": \"hierarchical\",\n            \"rules\": {\n      \
+          \          \"pre_processing_rules\": [\n                    {\"id\": \"\
+          remove_extra_spaces\", \"enabled\": True},\n                    {\"id\"\
+          : \"remove_urls_emails\", \"enabled\": False},\n                    {\"\
+          id\": \"remove_stopwords\", \"enabled\": False}\n                ],\n  \
+          \              \"parent_mode\": \"paragraph\",\n                \"segmentation\"\
+          : {\n                    \"separator\": \"###\\n\",\n                  \
+          \  \"max_tokens\": 4000,\n                    \"chunk_overlap\": 0\n   \
+          \             },\n                \"subchunk_segmentation\": {\n       \
+          \             \"separator\": \"\\n\",\n                    \"max_tokens\"\
+          : 500,\n                    \"chunk_overlap\": 0\n                }\n  \
+          \          }\n        },\n        \"retrieval_model\": {\n            \"\
+          search_method\": \"hybrid_search\",\n            \"reranking_enable\": False,\n\
+          \            \"top_k\": 3,\n            \"score_threshold_enabled\": False,\n\
+          \            \"weights\": {\n                \"weight_type\": \"keyword_first\"\
+          \ \n            }\n        },\n        \"embedding_model\": \"Titan-Embedding-G1\"\
+          ,\n        \"embedding_model_provider\": \"openai_api_compatible\"\n   \
+          \ }\n\n    # 3. Convert the Object into a JSON String\n    payload_string\
+          \ = json.dumps(payload, ensure_ascii=False)\n\n    return {\n        \"\
+          api_payload\": payload_string,\n        \"text_length\": len(compiled_text)\n\
+          \    }"
+        code_language: python3
+        outputs:
+          api_payload:
+            children: null
+            type: string
+          text_length:
+            children: null
+            type: number
+        selected: false
+        title: Code 13
+        type: code
+        variables:
+        - value_selector:
+          - '1776841190697'
+          - company_data
+          value_type: array[object]
+          variable: company_data
+        - value_selector:
+          - '1776841190697'
+          - extracted_year_month
+          value_type: string
+          variable: target_year_month
+        - value_selector:
+          - '1776841279803'
+          - target_document_name
+          value_type: string
+          variable: doc_name
+      height: 52
+      id: '1776920595602'
+      position:
+        x: 2122.961668719817
+        y: 434.63306656279906
+      positionAbsolute:
+        x: 2122.961668719817
+        y: 434.63306656279906
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+    - data:
+        authorization:
+          config: null
+          type: no-auth
+        body:
+          data:
+          - id: key-value-186
+            key: ''
+            type: text
+            value: '{{#1776920595602.api_payload#}}'
+          type: json
+        headers: 'Authorization:Bearer {{#env.KB_API#}}
+
+          Content-Type:application/json'
+        method: post
+        params: ''
+        retry_config:
+          max_retries: 4
+          retry_enabled: true
+          retry_interval: 5000
+        selected: false
+        ssl_verify: true
+        timeout:
+          connect: 10
+          max_connect_timeout: 0
+          max_read_timeout: 0
+          max_write_timeout: 0
+          read: 60
+          write: 15
+        title: HTTP Request 2
+        type: http-request
+        url: https://<your-dify-domain>/v1/datasets/{{#env.DB_ID#}}/document/create-by-text
+        variables: []
+      height: 158
+      id: '1776929786460'
+      position:
+        x: 2425.961668719817
+        y: 434.63306656279906
+      positionAbsolute:
+        x: 2425.961668719817
+        y: 434.63306656279906
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+    - data:
+        code: "def main(company_data: list, existing_segments: list, target_year_month:\
+          \ str):\n    existing_clients_to_update = []\n    new_clients_to_create\
+          \ = []\n    \n    # 1. Detailed lookup dictionary\n    segment_lookup =\
+          \ {}\n    for segment in existing_segments:\n        content = segment.get(\"\
+          content\", \"\")\n        seg_id = segment.get(\"id\")\n        child_chunks\
+          \ = segment.get(\"child_chunks\", [])\n        \n        if content.startswith(\"\
+          Company: \"):\n            first_line = content.split(\"\\n\")[0] \n   \
+          \         company_name_in_dify = first_line.replace(\"Company: \", \"\"\
+          ).strip()\n            \n            if company_name_in_dify and seg_id:\n\
+          \                # Shield: Check if month already exists\n             \
+          \   already_has_month = False\n                for child in child_chunks:\n\
+          \                    if child.get(\"content\", \"\").startswith(target_year_month):\n\
+          \                        already_has_month = True\n                    \
+          \    break\n                \n                segment_lookup[company_name_in_dify]\
+          \ = {\n                    \"segment_id\": seg_id,\n                   \
+          \ \"parent_content\": content, # <--- WE NOW SAVE THE FULL PARENT TEXT\n\
+          \                    \"already_has_month\": already_has_month\n        \
+          \        }\n\n    # 2. Route the traffic\n    for company in company_data:\n\
+          \        name = company.get(\"EU名\", \"Unknown\").strip()\n        plan\
+          \ = company.get(\"プラン\", \"Unknown\")\n        \n        usage_line = (\n\
+          \            f\"{target_year_month}-{plan}: \"\n            f\"{company.get('総リクエスト',\
+          \ '0')}, \"\n            f\"{company.get('文字あり', '0')}, \"\n           \
+          \ f\"{company.get('空欄', '0')}, \"\n            f\"{company.get('CBあり', '0')},\
+          \ \"\n            f\"{company.get('CBなし', '0')}, \"\n            f\"{company.get('エントリー',\
+          \ '0')}, \"\n            f\"{company.get('ElasticSorter', '0')}, \"\n  \
+          \          f\"{company.get('全文読取', '0')}\"\n        )\n        \n      \
+          \  # Route 1: Existing Client (Update Parent)\n        if name in segment_lookup:\n\
+          \            if not segment_lookup[name][\"already_has_month\"]:\n     \
+          \           old_content = segment_lookup[name][\"parent_content\"]\n   \
+          \             # Concatenate the old timeline with the new month!\n     \
+          \           new_parent_content = f\"{old_content.strip()}\\n{usage_line}\"\
+          \n                \n                existing_clients_to_update.append({\n\
+          \                    \"company_name\": name,\n                    \"segment_id\"\
+          : segment_lookup[name][\"segment_id\"],\n                    \"updated_parent_content\"\
+          : new_parent_content # <--- THE NEW GOLDEN VARIABLE\n                })\n\
+          \            \n        # Route 2: Brand New Client (Create Parent)\n   \
+          \     else:\n            # For new clients, the parent content is just the\
+          \ name + the first month\n            new_parent_content = f\"Company: {name}\\\
+          n{usage_line}\"\n            new_clients_to_create.append({\n          \
+          \      \"company_name\": name,\n                \"updated_parent_content\"\
+          : new_parent_content\n            })\n\n    return {\n        \"existing_clients_to_update\"\
+          : existing_clients_to_update,\n        \"new_clients_to_create\": new_clients_to_create,\n\
+          \        \"update_count\": len(existing_clients_to_update),\n        \"\
+          create_count\": len(new_clients_to_create)\n    }"
+        code_language: python3
+        outputs:
+          create_count:
+            children: null
+            type: number
+          existing_clients_to_update:
+            children: null
+            type: array[object]
+          new_clients_to_create:
+            children: null
+            type: array[object]
+          update_count:
+            children: null
+            type: number
+        selected: false
+        title: Traffic cop
+        type: code
+        variables:
+        - value_selector:
+          - '1776841190697'
+          - company_data
+          value_type: array[object]
+          variable: company_data
+        - value_selector:
+          - '1776843294741'
+          - existing_segments
+          value_type: array[object]
+          variable: existing_segments
+        - value_selector:
+          - '1776841038892'
+          - target_year_month
+          value_type: string
+          variable: target_year_month
+      height: 52
+      id: '1776933131965'
+      position:
+        x: 2425.961668719817
+        y: 334.3052225623138
+      positionAbsolute:
+        x: 2425.961668719817
+        y: 334.3052225623138
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+    - data:
+        outputs:
+        - value_selector:
+          - '1776929786460'
+          - body
+          value_type: string
+          variable: body
+        selected: false
+        title: Output 3
+        type: end
+      height: 89
+      id: '1776933721948'
+      position:
+        x: 2728.961668719817
+        y: 690.1168707819432
+      positionAbsolute:
+        x: 2728.961668719817
+        y: 690.1168707819432
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+    - data:
+        error_handle_mode: terminated
+        flatten_output: true
+        height: 302
+        is_parallel: false
+        iterator_input_type: array[object]
+        iterator_selector:
+        - '1776933131965'
+        - existing_clients_to_update
+        output_selector:
+        - '1776996904945'
+        - body
+        output_type: array[string]
+        parallel_nums: 10
+        selected: false
+        start_node_id: 1776996801351start
+        title: existing_clients_to_update
+        type: iteration
+        width: 630
+      height: 302
+      id: '1776996801351'
+      position:
+        x: 2728.961668719817
+        y: 334.3052225623138
+      positionAbsolute:
+        x: 2728.961668719817
+        y: 334.3052225623138
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 630
+      zIndex: 1
+    - data:
+        desc: ''
+        isInIteration: true
+        selected: false
+        title: ''
+        type: iteration-start
+      draggable: false
+      height: 48
+      id: 1776996801351start
+      parentId: '1776996801351'
+      position:
+        x: 24
+        y: 68
+      positionAbsolute:
+        x: 2752.961668719817
+        y: 402.3052225623138
+      selectable: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom-iteration-start
+      width: 44
+      zIndex: 1002
+    - data:
+        error_handle_mode: terminated
+        flatten_output: true
+        height: 279
+        is_parallel: false
+        iterator_input_type: array[object]
+        iterator_selector:
+        - '1776933131965'
+        - new_clients_to_create
+        output_selector:
+        - '1776997430479'
+        - body
+        output_type: array[string]
+        parallel_nums: 10
+        selected: false
+        start_node_id: 1776996805658start
+        title: new_clients_to_create
+        type: iteration
+        width: 630
+      height: 279
+      id: '1776996805658'
+      position:
+        x: 2728.961668719817
+        y: 34.52297310423141
+      positionAbsolute:
+        x: 2728.961668719817
+        y: 34.52297310423141
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 630
+      zIndex: 1
+    - data:
+        desc: ''
+        isInIteration: true
+        selected: false
+        title: ''
+        type: iteration-start
+      draggable: false
+      height: 48
+      id: 1776996805658start
+      parentId: '1776996805658'
+      position:
+        x: 24
+        y: 68
+      positionAbsolute:
+        x: 2752.961668719817
+        y: 102.52297310423141
+      selectable: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom-iteration-start
+      width: 44
+      zIndex: 1002
+    - data:
+        code: "def main(current_item: dict):\n    # Safely extract the ID and the\
+          \ new text from the current item in the loop\n    segment_id = current_item.get(\"\
+          segment_id\", \"\")\n    updated_content = current_item.get(\"updated_parent_content\"\
+          , \"\")\n    \n    return {\n        \"segment_id\": segment_id,\n     \
+          \   \"updated_content\": updated_content\n    }"
+        code_language: python3
+        isInIteration: true
+        isInLoop: false
+        iteration_id: '1776996801351'
+        outputs:
+          segment_id:
+            children: null
+            type: string
+          updated_content:
+            children: null
+            type: string
+        selected: false
+        title: Extract Update Variables
+        type: code
+        variables:
+        - value_selector:
+          - '1776996801351'
+          - item
+          value_type: object
+          variable: current_item
+      height: 52
+      id: '1776996898352'
+      parentId: '1776996801351'
+      position:
+        x: 99.40952121694318
+        y: 65
+      positionAbsolute:
+        x: 2828.3711899367604
+        y: 399.3052225623138
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+      zIndex: 1002
+    - data:
+        authorization:
+          config: null
+          type: no-auth
+        body:
+          data:
+          - id: key-value-531
+            key: ''
+            type: text
+            value: "{\n  \"segment\": {\n    \"content\": \"{{#1776996898352.updated_content#}}\"\
+              \n  }\n}"
+          type: json
+        headers: 'Authorization:Bearer {{#env.KB_API#}}
+
+          Content-Type:application/json'
+        isInIteration: true
+        isInLoop: false
+        iteration_id: '1776996801351'
+        method: post
+        params: ''
+        retry_config:
+          max_retries: 3
+          retry_enabled: true
+          retry_interval: 5000
+        selected: false
+        ssl_verify: true
+        timeout:
+          connect: 10
+          max_connect_timeout: 0
+          max_read_timeout: 0
+          max_write_timeout: 0
+          read: 60
+          write: 15
+        title: Update Parent Segment
+        type: http-request
+        url: https://<your-dify-domain>/v1/datasets/{{#env.DB_ID#}}/documents/{{#1776841279803.exisitng_doc_id#}}/segments/{{#1776996898352.segment_id#}}
+        variables: []
+      height: 212
+      id: '1776996904945'
+      parentId: '1776996801351'
+      position:
+        x: 370.45545669470357
+        y: 65
+      positionAbsolute:
+        x: 3099.417125414521
+        y: 399.3052225623138
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+      zIndex: 1002
+    - data:
+        code: "def main(current_item: dict):\n    company_name = current_item.get(\"\
+          company_name\", \"\")\n    updated_content = current_item.get(\"updated_parent_content\"\
+          , \"\")\n    return {\n        \"company_name\": company_name,\n       \
+          \ \"updated_content\": updated_content\n    }"
+        code_language: python3
+        isInIteration: true
+        isInLoop: false
+        iteration_id: '1776996805658'
+        outputs:
+          company_name:
+            children: null
+            type: string
+          updated_content:
+            children: null
+            type: string
+        selected: false
+        title: Extract Create Variables
+        type: code
+        variables:
+        - value_selector:
+          - '1776996805658'
+          - item
+          value_type: string
+          variable: current_item
+      height: 52
+      id: '1776997377831'
+      parentId: '1776996805658'
+      position:
+        x: 99.5441563026593
+        y: 65
+      positionAbsolute:
+        x: 2828.5058250224765
+        y: 99.52297310423141
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+      zIndex: 1002
+    - data:
+        authorization:
+          config: null
+          type: no-auth
+        body:
+          data:
+          - id: key-value-931
+            key: ''
+            type: text
+            value: "{\n  \"segments\": [\n    {\n      \"content\": \"{{#1776997377831.updated_content#}}\"\
+              ,\n      \"keywords\": [\n        \"{{#1776997377831.company_name#}}\"\
+              \n      ]\n    }\n  ]\n}"
+          type: json
+        headers: 'Authorization:Bearer {{#env.KB_API#}}
+
+          Content-Type:application/json'
+        isInIteration: true
+        isInLoop: false
+        iteration_id: '1776996805658'
+        method: post
+        params: ''
+        retry_config:
+          max_retries: 3
+          retry_enabled: true
+          retry_interval: 5000
+        selected: false
+        ssl_verify: true
+        timeout:
+          connect: 10
+          max_connect_timeout: 0
+          max_read_timeout: 0
+          max_write_timeout: 0
+          read: 60
+          write: 15
+        title: Create Parent Segment
+        type: http-request
+        url: https://<your-dify-domain>/v1/datasets/{{#env.DB_ID#}}/documents/{{#1776841279803.exisitng_doc_id#}}/segments
+        variables: []
+      height: 193
+      id: '1776997430479'
+      parentId: '1776996805658'
+      position:
+        x: 370.0172448720191
+        y: 65
+      positionAbsolute:
+        x: 3098.9789135918363
+        y: 99.52297310423141
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+      zIndex: 1002
+    - data:
+        outputs:
+        - value_selector:
+          - '1776996805658'
+          - output
+          value_type: array[string]
+          variable: output
+        selected: false
+        title: Output 3
+        type: end
+      height: 89
+      id: '1776998297814'
+      position:
+        x: 3418.961668719817
+        y: 34.52297310423141
+      positionAbsolute:
+        x: 3418.961668719817
+        y: 34.52297310423141
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+    - data:
+        outputs:
+        - value_selector:
+          - '1776996801351'
+          - output
+          value_type: array[string]
+          variable: output
+        selected: false
+        title: Output 4
+        type: end
+      height: 89
+      id: '1776998300565'
+      position:
+        x: 3418.961668719817
+        y: 334.3052225623138
+      positionAbsolute:
+        x: 3418.961668719817
+        y: 334.3052225623138
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+    viewport:
+      x: 82.66901296178594
+      y: 270.7668896703709
+      zoom: 0.32441804425372867
+  rag_pipeline_variables: []

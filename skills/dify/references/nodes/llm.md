@@ -36,12 +36,7 @@ The `model` sub-object controls which model is called and how it behaves.
 ```yaml
 model:
   completion_params:
-    frequency_penalty: 0
-    max_tokens: 2000
-    presence_penalty: 0
-    stop: []
     temperature: 0.7
-    top_p: 1
   mode: chat
   name: Claude-4-Sonnet
   provider: langgenius/openai_api_compatible/openai_api_compatible
@@ -56,11 +51,6 @@ model:
   - OpenAI: `gpt-4o`, `gpt-4o-mini`, `gpt-4-turbo`
   - Google: `gemini-1.5-pro`, `gemini-1.5-flash`
 - `temperature`: Controls randomness. Range 0.0–1.0. Lower = more deterministic; higher = more creative.
-- `max_tokens`: Maximum tokens in the response. Set based on expected output length.
-- `frequency_penalty`: Reduces repetition of the same words (0 = off).
-- `presence_penalty`: Encourages introducing new topics (0 = off).
-- `stop`: Array of strings that stop generation when encountered. Usually empty `[]`.
-- `top_p`: Nucleus sampling. Keep at `1` unless you have a specific reason to change it.
 
 ## Prompt Configuration
 
@@ -371,30 +361,68 @@ After the LLM node executes, the following variables are available to downstream
 
 Replace `llm_node_id` with the actual `id` of your LLM node (the numeric string set in the node's `id` field).
 
-## Complete YAML Example
+## Complete YAML Examples
 
-A minimal LLM node with RAG context enabled — matches real Dify export structure:
+### Pattern A — Simple variable injection (workflow, no RAG)
+
+Use `{{#node_id.field#}}` to pass string, number, array[string], or array[number] inputs from upstream nodes. This does NOT work for array[object] (knowledge retrieval results) — use Pattern B for that.
+
+```yaml
+- data:
+    context:
+      enabled: false
+      variable_selector: []
+    model:
+      completion_params:
+        temperature: 0.7
+      mode: chat
+      name: GPT-4o
+      provider: langgenius/openai_api_compatible/openai_api_compatible
+    prompt_template:
+    - id: e614d41b-6cf9-44f5-a2d7-ddf45bb56e87
+      role: system
+      text: You are a helpful assistant. Answer the user's question clearly and concisely.
+    - id: cc37b008-2c50-465c-886b-a4714212aa54
+      role: user
+      text: '{{#1718001000001.user_query#}}'
+    selected: false
+    title: LLM
+    type: llm
+    vision:
+      enabled: false
+  height: 90
+  id: '1718001000002'
+  position:
+    x: 383
+    y: 282
+  positionAbsolute:
+    x: 383
+    y: 282
+  selected: false
+  sourcePosition: right
+  targetPosition: left
+  type: custom
+  width: 243
+```
+
+### Pattern B — RAG context injection (knowledge retrieval results)
+
+Knowledge retrieval output is an array of objects — it cannot be referenced with `{{#node_id.field#}}`. The ONLY correct way is: set `context.enabled: true` with `variable_selector` pointing to the knowledge retrieval node's `result`, then use `{{#context#}}` in the prompt. Dify expands `{{#context#}}` into the retrieved document chunks at runtime.
+
+In a **workflow** (no `memory` block):
 
 ```yaml
 - data:
     context:
       enabled: true
       variable_selector:
-      - '1732007415800'
+      - '1732007415800'   # ID of the knowledge-retrieval node
       - result
-    memory:
-      query_prompt_template: '{{#sys.query#}}'
-      role_prefix:
-        assistant: ''
-        user: ''
-      window:
-        enabled: false
-        size: 50
     model:
       completion_params:
         temperature: 0.3
       mode: chat
-      name: Claude-4-Sonnet
+      name: GPT-4o
       provider: langgenius/openai_api_compatible/openai_api_compatible
     prompt_template:
     - id: a1b2c3d4-0000-0000-0000-000000000001
@@ -425,16 +453,22 @@ A minimal LLM node with RAG context enabled — matches real Dify export structu
   width: 243
 ```
 
+In a **chatflow**, add a `memory` block above `model` (see Memory Configuration section). The user's question is carried via `memory.query_prompt_template: '{{#sys.query#}}'` — the model therefore sees both the retrieved evidence and the live user question without needing a second `{{#sys.query#}}` in the user prompt.
+
 **Required fields checklist** — every LLM node in a valid DSL must have all of these:
 
 - `context` — always present, even when disabled (`enabled: false, variable_selector: []`)
-- `memory` — include for chatflows where conversation history matters; omit for one-shot flows
 - `model` — with `completion_params`, `mode`, `name`, `provider`
 - `prompt_template` — each entry must have `id` (UUIDv4), `role`, `text`; no `edition_type` field
 - `selected: false`
 - `title`
 - `type: llm`
 - `vision` — always present, `enabled: false` unless image input is needed
+
+**Workflow vs chatflow — `memory` field rule (CRITICAL):**
+
+- **Workflow LLM nodes**: Do NOT include a `memory` block. Real Dify workflow exports have no `memory` field on LLM nodes. Including it is incorrect and may cause errors.
+- **Chatflow LLM nodes**: Include `memory` when conversation history injection is needed. See the Memory Configuration section above.
 
 **Optional fields** (only include when the feature is actually used):
 
@@ -447,6 +481,5 @@ A minimal LLM node with RAG context enabled — matches real Dify export structu
 - **Wrong model name string**: Using an approximate name like `claude-3.5-sonnet` instead of the exact identifier `claude-3-5-sonnet-20241022`. Check the provider's model list for the exact string.
 - **Forgetting to enable vision**: Passing an image variable in the prompt but leaving `vision.enabled: false`. The image will not be processed.
 - **Missing output format instructions**: When you expect structured output but have not enabled `structured_output_enabled`, add explicit formatting instructions in the system prompt (e.g., "Respond only with valid JSON matching this schema: ...").
-- **Token overflow**: Setting `max_tokens` too low causes the response to be cut off (`finish_reason: length`). Set it generously for long-form outputs.
 - **Memory in non-chatflow**: Enabling `memory` in a standard workflow app type has no effect and may cause errors. Only enable in chatflow.
 - **Missing context enable**: Adding a Knowledge Retrieval node upstream but forgetting to set `context.enabled: true` in the LLM node means retrieved documents are silently ignored.

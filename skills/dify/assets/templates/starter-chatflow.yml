@@ -15,7 +15,12 @@ app:
   mode: advanced-chat               # REQUIRED for chatflows — do not change
   name: "# TODO: Your Chatflow Name"
   use_icon_as_answer_icon: false
-dependencies: []                    # TODO: Add marketplace plugin entries here if tool nodes use plugins
+dependencies:
+- current_identifier: null
+  type: marketplace
+  value:
+    marketplace_plugin_unique_identifier: langgenius/openai_api_compatible:0.0.51@20a0511b3ac00ad81524ff7479b9f5e8bbd456e0590d4931b41c8dd82bee7192
+    version: null
 kind: app
 version: 0.5.0
 workflow:
@@ -127,6 +132,7 @@ workflow:
     edges:
       # Edge 1: Start → LLM
       - data:
+          isInIteration: false
           isInLoop: false
           sourceType: start
           targetType: llm
@@ -170,13 +176,12 @@ workflow:
       # file uploads, etc.) beyond the main chat message.
       # -----------------------------------------------------------------
       - data:
-          desc: ""
           selected: false
           title: "Start"
           type: start
           variables: []             # TODO: Add extra input variables if needed (e.g. language selector, file upload)
-        height: 54
-        id: "1718010000001"         # TODO: Replace with output of: .venv/Scripts/.venv/Scripts/python skills/dify/scripts/generate_id.py
+        height: 75
+        id: "1718010000001"         # TODO: Replace with output of: .venv/Scripts/python skills/dify/scripts/generate_id.py
         position:
           x: 80
           y: 282
@@ -187,7 +192,7 @@ workflow:
         sourcePosition: right
         targetPosition: left
         type: custom
-        width: 244
+        width: 243
 
       # -----------------------------------------------------------------
       # NODE 2: LLM
@@ -198,9 +203,8 @@ workflow:
           context:
             enabled: false          # TODO: Set true + configure variable_selector if using a knowledge base
             variable_selector: []
-          desc: ""
           memory:
-            query_prompt_template: "{{#sys.query#}}"
+            query_prompt_template: "{{#sys.query#}}\n\n{{#sys.files#}}"
             role_prefix:
               assistant: ""
               user: ""
@@ -214,31 +218,22 @@ workflow:
             name: Claude-4-Sonnet
             provider: langgenius/openai_api_compatible/openai_api_compatible
           prompt_template:
-            - edition_type: basic
-              id: "00000000-0000-0000-0000-000000000001"  # TODO: Replace with a real UUIDv4
+            - id: "00000000-0000-0000-0000-000000000001"  # TODO: Replace with a real UUIDv4
               role: system
               text: |
                 TODO: Write a specific system prompt here. Do NOT use "You are a helpful assistant."
                 Instead, define: (1) the specific role, (2) the task this node performs, (3) the output
                 format (plain text, JSON, bullet list, etc.), and (4) any behavioral constraints.
-            - edition_type: basic
-              id: "00000000-0000-0000-0000-000000000002"  # TODO: Replace with a real UUIDv4
+            - id: "00000000-0000-0000-0000-000000000002"  # TODO: Replace with a real UUIDv4
               role: user
               text: "{{#sys.query#}}"   # TODO: Add other upstream variable injections if needed
-          retry_config:
-            max_retries: 3
-            retry_enabled: true
-            retry_interval: 1000
           selected: false
-          structured_output: {}       # TODO: Replace with JSON schema if structured output is needed; otherwise leave as {}
-          structured_output_enabled: false  # TODO: Set true when LLM must return named JSON fields
           title: "LLM"              # TODO: Give this node a descriptive name (e.g. "Generate Answer", "Extract Fields")
           type: llm
-          variables: []
           vision:
             enabled: false          # TODO: Set true if accepting image inputs (also enable file_upload above)
-        height: 98
-        id: "1718010000002"         # TODO: Replace with output of: .venv/Scripts/.venv/Scripts/python skills/dify/scripts/generate_id.py
+        height: 90
+        id: "1718010000002"         # TODO: Replace with output of: .venv/Scripts/python skills/dify/scripts/generate_id.py
         position:
           x: 380
           y: 282
@@ -249,7 +244,7 @@ workflow:
         sourcePosition: right
         targetPosition: left
         type: custom
-        width: 244
+        width: 243
 
       # -----------------------------------------------------------------
       # NODE 3: Template Transform
@@ -259,7 +254,6 @@ workflow:
       # The variables array maps upstream node outputs to template variables.
       # -----------------------------------------------------------------
       - data:
-          desc: ""
           selected: false
           template: |
             <div style="background:#f8f9fa;border-radius:8px;padding:16px;font-family:sans-serif;line-height:1.6;">
@@ -270,11 +264,12 @@ workflow:
           type: template-transform
           variables:
             - value_selector:
-                - "1718010000002"   # TODO: Update to the actual LLM node ID
-                - text
-              variable: llm_output  # TODO: Must match the {{ llm_output }} reference in the template above
+              - "1718010000002"     # TODO: Update to the actual LLM node ID
+              - text
+              value_type: string
+              variable: llm_output  # TODO: Must match {{ llm_output }} in the template above
         height: 54
-        id: "1718010000003"         # TODO: Replace with output of: .venv/Scripts/.venv/Scripts/python skills/dify/scripts/generate_id.py
+        id: "1718010000003"         # TODO: Replace with output of: .venv/Scripts/python skills/dify/scripts/generate_id.py
         position:
           x: 680
           y: 282
@@ -285,7 +280,7 @@ workflow:
         sourcePosition: right
         targetPosition: left
         type: custom
-        width: 244
+        width: 243
 
       # -----------------------------------------------------------------
       # NODE 4: Answer
@@ -295,13 +290,12 @@ workflow:
       # -----------------------------------------------------------------
       - data:
           answer: "{{#1718010000003.output#}}"  # TODO: Update node ID to match your template-transform node ID
-          desc: ""
           selected: false
           title: "Answer"
           type: answer              # REQUIRED for chatflows — do not change to "end"
           variables: []
-        height: 107
-        id: "1718010000004"         # TODO: Replace with output of: .venv/Scripts/.venv/Scripts/python skills/dify/scripts/generate_id.py
+        height: 105
+        id: "1718010000004"         # TODO: Replace with output of: .venv/Scripts/python skills/dify/scripts/generate_id.py
         position:
           x: 980
           y: 282
@@ -312,7 +306,7 @@ workflow:
         sourcePosition: right
         targetPosition: left
         type: custom
-        width: 244
+        width: 243
     viewport:
       x: 0
       y: 0

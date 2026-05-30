@@ -1,0 +1,51 @@
+{
+  "skill_name": "dify",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Build a customer support chatbot that searches our product FAQ knowledge base and answers customer questions. When it finds a relevant answer, it should respond clearly; when it can't, it should say so politely.",
+      "expected_output": "A chatflow DSL YAML file written to output/. The app is a chatflow (app.mode: advanced-chat) ending in an answer node. The graph includes a knowledge-retrieval node that searches the FAQ dataset, an LLM node that composes the answer from the retrieved context, and a template-transform node before the answer. A non-empty rich opening_statement is set. The file passes validate_workflow.py.",
+      "files": [],
+      "expectations": [
+        "A YAML file is written to the output/ directory",
+        "The generated YAML passes skills/dify/scripts/validate_workflow.py with exit code 0",
+        "app.mode is 'advanced-chat' (chatflow), not 'workflow'",
+        "The graph contains a knowledge-retrieval node for the FAQ search",
+        "The graph terminates in an answer node, not an end node",
+        "A non-empty opening_statement is set on the chatflow",
+        "The node-graph plan was presented to the user for approval before any YAML was generated"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Create a document summarization workflow that accepts a document, extracts the key points, and emails the summary via SendGrid.",
+      "expected_output": "A workflow DSL YAML file written to output/. The app is a workflow (app.mode: workflow) ending in an end node. The graph extracts/reads the document, uses an LLM node to summarize it, and sends the result through SendGrid — via a tool node if a Dify marketplace plugin was found, or an http-request node only if plugin-finder confirmed none exists. No credentials are hardcoded. The file passes validate_workflow.py.",
+      "files": [],
+      "expectations": [
+        "A YAML file is written to the output/ directory",
+        "The generated YAML passes skills/dify/scripts/validate_workflow.py with exit code 0",
+        "app.mode is 'workflow', not 'advanced-chat'",
+        "The graph terminates in an end node, not an answer node",
+        "An LLM node performs the summarization step",
+        "The SendGrid integration uses a tool node if a marketplace plugin was found, or an http-request node only when plugin-finder confirmed no plugin exists",
+        "No API keys or secrets are hardcoded — any SendGrid credential references {{env.VARIABLE_NAME}} or plugin auth, never a literal value",
+        "The node-graph plan was presented to the user for approval before any YAML was generated"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "Explain what this workflow does and walk me through it step by step.",
+      "expected_output": "A plain-language explanation of the attached RAG pipeline workflow — NOT a newly generated DSL file. The skill routes to the reverse-direction dsl-explainer agent and produces a walkthrough, a Visual Flow Diagram (Mermaid flowchart), and a node-by-node explanation derived from each node's data.title. It correctly identifies this as a retrieval-augmented (RAG) workflow where knowledge retrieval feeds an LLM.",
+      "files": [
+        "assets/workflows/rag-pipeline.yml"
+      ],
+      "expectations": [
+        "The skill routes to the reverse-direction dsl-explainer agent, not the forward generation pipeline",
+        "No new DSL YAML file is generated in output/",
+        "The explanation includes a Visual Flow Diagram rendered as a Mermaid flowchart",
+        "The output gives a node-by-node explanation derived from each node's data.title",
+        "The walkthrough is in plain language and identifies the app as a RAG workflow (knowledge retrieval feeding an LLM)"
+      ]
+    }
+  ]
+}

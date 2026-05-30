@@ -33,8 +33,8 @@ nodes:
     type: llm
     data:
       model:
-        provider: anthropic
-        name: claude-3-5-sonnet-20241022
+        provider: langgenius/openai_api_compatible/openai_api_compatible
+        name: Claude-4-Sonnet
         mode: chat
       memory:
         enabled: true

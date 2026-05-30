@@ -106,7 +106,7 @@ The `sourceHandle` field must match the actual output handles available on the s
 | http-request | `source`, `fail-branch`, `success-branch` |
 | knowledge-retrieval | `source` |
 | template-transform | `source` |
-| doc-extractor | `source` |
+| document-extractor | `source` |
 | list-operator | `source` |
 | if-else | `true`, `false` |
 | question-classifier | `[class-name-1]`, `[class-name-2]`, ... (custom class labels) |

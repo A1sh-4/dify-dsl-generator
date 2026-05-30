@@ -6,21 +6,50 @@ app:
   mode: workflow
   name: RAG Pipeline Workflow
   use_icon_as_answer_icon: false
+dependencies:
+- current_identifier: null
+  type: marketplace
+  value:
+    marketplace_plugin_unique_identifier: langgenius/openai_api_compatible:0.0.51@20a0511b3ac00ad81524ff7479b9f5e8bbd456e0590d4931b41c8dd82bee7192
+    version: null
 kind: app
 version: 0.5.0
-dependencies: []
 workflow:
   conversation_variables: []
   environment_variables: []
   features:
     file_upload:
+      allowed_file_extensions:
+      - .JPG
+      - .JPEG
+      - .PNG
+      - .GIF
+      - .WEBP
+      - .SVG
+      allowed_file_types:
+      - image
+      allowed_file_upload_methods:
+      - local_file
+      - remote_url
       enabled: false
+      fileUploadConfig:
+        attachment_image_file_size_limit: 2
+        audio_file_size_limit: 50
+        batch_count_limit: 5
+        file_size_limit: 15
+        file_upload_limit: 20
+        image_file_batch_limit: 10
+        image_file_size_limit: 5
+        single_chunk_attachment_limit: 10
+        video_file_size_limit: 100
+        workflow_file_upload_limit: 10
       image:
         enabled: false
         number_limits: 3
         transfer_methods:
         - local_file
         - remote_url
+      number_limits: 3
     opening_statement: ''
     retriever_resource:
       enabled: true
@@ -39,10 +68,10 @@ workflow:
     edges:
     - data:
         isInIteration: false
+        isInLoop: false
         sourceType: start
         targetType: knowledge-retrieval
       id: 1718004000001-source-1718004000002-target
-      selected: false
       source: '1718004000001'
       sourceHandle: source
       target: '1718004000002'
@@ -51,10 +80,10 @@ workflow:
       zIndex: 0
     - data:
         isInIteration: false
+        isInLoop: false
         sourceType: knowledge-retrieval
         targetType: llm
       id: 1718004000002-source-1718004000003-target
-      selected: false
       source: '1718004000002'
       sourceHandle: source
       target: '1718004000003'
@@ -63,10 +92,10 @@ workflow:
       zIndex: 0
     - data:
         isInIteration: false
+        isInLoop: false
         sourceType: llm
         targetType: end
       id: 1718004000003-source-1718004000004-target
-      selected: false
       source: '1718004000003'
       sourceHandle: source
       target: '1718004000004'
@@ -75,18 +104,20 @@ workflow:
       zIndex: 0
     nodes:
     - data:
-        desc: Accepts the user's question for knowledge retrieval
         selected: false
         title: Start
         type: start
         variables:
-        - label: Your question
-          max_length: 2048
+        - default: ''
+          hint: ''
+          label: user_question
+          max_length: 500
           options: []
+          placeholder: ''
           required: true
-          type: text-input
+          type: paragraph
           variable: user_question
-      height: 90
+      height: 109
       id: '1718004000001'
       position:
         x: 80
@@ -98,113 +129,108 @@ workflow:
       sourcePosition: right
       targetPosition: left
       type: custom
-      width: 244
+      width: 242
     - data:
         dataset_ids:
         - YOUR_DATASET_ID_HERE
-        desc: Retrieves the top-5 most relevant document chunks from the knowledge
-          base
         multiple_retrieval_config:
           reranking_enable: false
-          score_threshold: 0.5
+          reranking_mode: weighted_score
+          score_threshold: null
           top_k: 5
+          weights:
+            keyword_setting:
+              keyword_weight: 0.3
+            vector_setting:
+              embedding_model_name: YOUR_EMBEDDING_MODEL_HERE
+              embedding_provider_name: langgenius/openai_api_compatible/openai_api_compatible
+              vector_weight: 0.7
+            weight_type: customized
+        query_attachment_selector: []
         query_variable_selector:
         - '1718004000001'
         - user_question
-        retrieval_mode: semantic_search
+        retrieval_mode: multiple
         selected: false
-        single_retrieval_config:
-          model:
-            completion_params:
-              max_tokens: 512
-              temperature: 0.1
-            mode: chat
-            name: claude-haiku-4-5-20251001
-            provider: anthropic
         title: Knowledge Retrieval
         type: knowledge-retrieval
-      height: 98
+      height: 90
       id: '1718004000002'
       position:
-        x: 380
-        y: 282
+        x: 387
+        y: 303
       positionAbsolute:
-        x: 380
-        y: 282
+        x: 387
+        y: 303
       selected: false
       sourcePosition: right
       targetPosition: left
       type: custom
-      width: 244
+      width: 242
     - data:
         context:
           enabled: true
           variable_selector:
           - '1718004000002'
           - result
-        desc: Answers the question using only the retrieved context
         model:
           completion_params:
-            max_tokens: 2048
-            temperature: 0.3
+            temperature: 0.7
           mode: chat
-          name: claude-sonnet-4-6
-          provider: anthropic
+          name: Claude-4-Sonnet
+          provider: langgenius/openai_api_compatible/openai_api_compatible
         prompt_template:
-        - role: system
+        - id: 5782463d-5abb-4ca3-97a8-58c0503dc628
+          role: system
           text: 'You are a helpful assistant. Answer based ONLY on the provided context.
-
             If the context does not contain the answer, say "I don''t have information
             about that."
 
-            Always cite which document the information came from.
-
             '
-          id: 87ba025f-7ecb-4fad-b675-798533ec5497
-        - role: user
-          text: '{{#1718004000001.user_question#}}'
-          id: 6bb8d67b-fb3c-422f-9637-03570ca7b5d4
+        - id: 2797c585-e864-4780-9622-6bd35972737a
+          role: user
+          text: "{{#context#}}\n\n\n{{#1718004000001.user_question#}}"
         selected: false
         title: RAG Answer
         type: llm
         vision:
           enabled: false
-      height: 98
+      height: 88
       id: '1718004000003'
       position:
-        x: 680
-        y: 282
+        x: 689
+        y: 303
       positionAbsolute:
-        x: 680
-        y: 282
+        x: 689
+        y: 303
       selected: false
       sourcePosition: right
       targetPosition: left
       type: custom
-      width: 244
+      width: 242
     - data:
-        desc: Returns the grounded answer
         outputs:
         - value_selector:
           - '1718004000003'
           - text
-          variable: answer
+          value_type: string
+          variable: text
         selected: false
         title: End
         type: end
-      height: 54
+      height: 88
       id: '1718004000004'
       position:
-        x: 980
-        y: 282
+        x: 991
+        y: 303
       positionAbsolute:
-        x: 980
-        y: 282
+        x: 991
+        y: 303
       selected: false
       sourcePosition: right
       targetPosition: left
       type: custom
-      width: 244
+      width: 242
     viewport:
       x: 0
       y: 0

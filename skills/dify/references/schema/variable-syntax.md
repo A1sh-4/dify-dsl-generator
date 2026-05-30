@@ -1,5 +1,7 @@
 # Dify Variable Reference Syntax
 
+> **Scope of this doc vs. `config/variables.md`:** This file is the authority on the **reference syntax and mechanics** — how to *write* a `{{#...#}}` reference, scope rules, nested access, the DSL-vs-Jinja2 distinction, and common reference mistakes. For the **five variable *types*** (input / node-output / environment / conversation / system), how to *declare* them in node config, naming rules, and the type-compatibility matrix, see `skills/dify/references/config/variables.md`. The two are complementary; consult both when declaring and wiring variables.
+
 ## Overview
 
 Dify uses a special syntax to reference variables across nodes. Understanding this is critical — it is the **most common source of DSL errors**. Every time a node needs to consume the output of another node, it uses a variable reference. Misconfigured references will cause runtime failures that are often silent or cryptic.

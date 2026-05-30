@@ -20,7 +20,8 @@ You do NOT generate YAML. You do NOT modify the node graph. You produce one outp
 
 - `skills/dify/references/config/prompt-engineering.md` — Dify prompt best practices, system prompt structure, and template syntax
 - `skills/dify/references/nodes/llm.md` — LLM node required fields, context variable wiring, memory settings, vision mode
-- `skills/dify/references/config/llm-settings.md` — model selection, temperature ranges, max_tokens guidance, provider names
+- `skills/dify/references/config/llm-settings.md` — model selection, temperature ranges, provider names
+- `skills/dify/references/config/structured-output.md` — read before the Step 7 structured-output decision: the `structured_output.schema` field structure, when to enable it, and the system-prompt compliance line that must accompany it
 
 Read these files before writing a single prompt. The conventions they establish (variable syntax, model IDs, context wiring) must be followed exactly.
 
@@ -56,6 +57,66 @@ The system prompt defines the LLM's role, behavior rules, and output constraints
 - Multi-step reasoning or structured output: 10–20 sentences (include step-by-step thinking instructions, output schema)
 - Creative generation: 5–10 sentences (include tone, style, length target)
 
+### Step 2a — Design the output format and visualizations
+
+For every LLM node whose output goes to an `answer`, `template-transform`, or `end` node and `structured_output_enabled` is `false`, actively decide what the best output looks like. Do not leave format to the model's discretion. Write specific, explicit formatting instructions directly into the system prompt — do not write vague instructions like "produce a clear report."
+
+**Formatting toolkit — choose the elements that fit and instruct the model explicitly for each:**
+
+- **Section headers** — use `##` for major sections, `###` for sub-sections. Name the sections in the prompt so the model uses consistent headings every time.
+- **Markdown tables** — required for any comparison, ranking, multi-attribute summary, or side-by-side data. Tell the model exactly when a table is needed: e.g., "Present the comparison as a markdown table with columns for Name, Value, and Change."
+- **Bold emphasis** — use `**term**` for key findings, critical values, named entities, and action items. Instruct explicitly: "Bold all key findings and action items."
+- **Bullet and numbered lists** — bullets for unordered items; numbered lists for steps, ranked items, or sequences.
+- **Emojis as visual anchors** — when the tone is not strictly formal, one relevant emoji before each section header improves scannability. Instruct explicitly: "Prefix each section header with a relevant emoji."
+- **Spacing** — instruct the model to add a blank line between sections. Dense output without spacing is harder to read.
+- **Length target** — always specify: "3–5 bullet points", "no more than 300 words", "one paragraph per section", etc.
+
+**Decision guide — which elements to include based on output type:**
+
+| Node output type | Formatting elements to specify |
+|---|---|
+| Multi-section report or analysis | `##` headers + bold key findings + bullets + emoji anchors + blank lines between sections |
+| Comparison of options or data | Markdown table (required) + short prose summary after the table |
+| Step-by-step instructions | Numbered list + bold action verb at the start of each step |
+| Single-answer or short reply | One paragraph, no headers |
+| Output containing numeric data | Markdown table + EChart (see below) |
+
+**ECharts — include when numeric data is present:**
+
+Dify renders ECharts natively when the LLM outputs a code block tagged ` ```echarts `. When the node's output contains numeric comparisons, trends, distributions, rankings, or KPIs — include EChart instructions in the system prompt alongside the prose formatting instructions.
+
+Add the following to the system prompt when ECharts apply:
+
+```text
+When your output contains numerical data or comparisons, include a chart using this exact format:
+
+  ```echarts
+  { ... valid Apache EChart JSON ... }
+  ```
+
+Choose the single best chart type from this list:
+- Bar Chart — comparing discrete categories
+- Line Chart — trends over time
+- Pie Chart — part-to-whole proportions (maximum 6 slices)
+- Scatter Plot — correlation between two numeric variables
+- Stacked Area Chart — cumulative trends across categories
+- Radar Chart — multi-dimensional profile comparison
+- Heatmap — intensity across a two-dimensional grid
+- Tree Chart — hierarchical relationships
+
+Required layout rules (prevents label overlap):
+- Title: always set "left": "center"
+- Legend: always set "bottom": 0
+- Grid: always set "top": 60
+
+Place the chart after the prose summary and before any detailed breakdown tables.
+```
+
+**When NOT to include ECharts:**
+- Output is purely qualitative (no numbers, ratios, or rankings)
+- The node produces a short single-answer reply
+- `structured_output_enabled: true` is set on this node (ECharts apply to prose outputs only)
+
 ### Step 3 — Select temperature
 
 Choose temperature based on the task type the node performs. Use the midpoint of each range as the default; adjust toward the boundary only when there is a clear reason.
@@ -71,20 +132,7 @@ Choose temperature based on the task type the node performs. Use the midpoint of
 | Conversational / empathetic response | 0.6–0.8 | Natural-sounding interaction is important |
 | Creative writing, brainstorming, ideation | 0.8–1.2 | Variety and novelty are more valuable than precision |
 
-### Step 4 — Set max_tokens
-
-Base max_tokens on what the node is expected to produce:
-
-| Output type | max_tokens |
-|---|---|
-| Single label or classification | 50 |
-| Short structured extraction (< 5 fields) | 200 |
-| Brief answer or summary (1–3 paragraphs) | 500 |
-| Detailed answer or report (3–6 paragraphs) | 1000 |
-| Long-form content or full document section | 2000 |
-| Multi-section report with reasoning | 4000 |
-
-### Step 5 — Write the user prompt template
+### Step 4 — Write the user prompt template
 
 The user prompt template is what gets sent to the LLM at runtime. It combines static instruction text with dynamic variable injections from upstream nodes.
 
@@ -146,14 +194,22 @@ Actively decide for each LLM node whether `structured_output_enabled` should be 
 
 **When recommending structured output, include in the prompt spec:**
 
-1. The JSON schema (field names, types, descriptions, required list) — formatted as the `structured_output.schema` YAML block (the JSON Schema object goes under `structured_output: / schema:`, not directly under `structured_output:`)
-2. System prompt instruction: "Respond ONLY with a valid JSON object matching the schema below. Include no explanation, preamble, or markdown."
+1. The JSON schema (field names, types, descriptions, required list) — formatted as the `structured_output.schema` YAML block (the JSON Schema object goes under `structured_output: / schema:`, not directly under `structured_output:`). The schema goes ONLY in the YAML config — do NOT paste it into the system prompt text.
+2. System prompt instruction: add one short line at the end of the system prompt, such as "Return your response as a JSON object. Do not include explanations, preamble, or markdown." This is sufficient — the schema is enforced by `structured_output_enabled: true` and by the `description` fields on each schema property. Never write "matching the schema below" or paste the schema into the prompt text.
 3. Temperature: 0.1–0.2 (structured output requires near-determinism)
 
 **Recommend `structured_output_enabled: false` when:**
 - The node produces a prose response (summary, answer, narrative)
 - The node's output goes directly to an `answer` or `template-transform` node as a single string
 - The output is Markdown or HTML that must be rendered as-is
+
+**When you decide `structured_output_enabled: false`, you MUST apply rich formatting — this is not optional.** Go back to Step 2a and apply the full formatting toolkit to the system prompt:
+
+- Choose the formatting elements that fit the node's output (headers, tables, bold, bullets, emojis, spacing, length target) using the decision guide table in Step 2a
+- If the node's output will contain any numeric data, comparisons, trends, rankings, or KPIs — include the ECharts instructions from Step 2a so the model produces a chart alongside the prose
+- Never write a bare system prompt that just says what to do without specifying how the output should look — the formatting instructions are as important as the task instructions
+
+Treat the Step 2a formatting spec as the counterpart to the structured output schema: structured output gives you typed JSON fields; rich formatting gives you a readable, visual, human-facing result. One or the other always applies.
 
 ### Step 8 — Provide template-transform content guidance
 
@@ -288,6 +344,8 @@ PROMPT COVERAGE: [N] LLM nodes specified, [M] agent nodes specified. All nodes i
 - Temperature for classification and extraction nodes MUST be ≤ 0.3
 - Temperature for structured output nodes MUST be 0.1–0.2
 - ALWAYS make an explicit `structured_output: enabled | disabled` decision for each LLM node — never leave it implicit
+- ALWAYS complete Step 2a for every LLM node where `structured_output_enabled` is `false` — explicitly specify formatting elements (headers, tables, bold, emojis, spacing, length target) in the system prompt; never write vague instructions like "produce a clear report"
+- ALWAYS include ECharts instructions in the system prompt for any prose LLM node whose output contains numeric data, comparisons, trends, rankings, or KPIs — use the spec in Step 2a
 - ALWAYS include `Template-transform guidance` in the spec for any LLM node whose output (directly or via a code node) reaches a `template-transform` node
 - DO NOT generate YAML under any circumstances
 - DO NOT modify the node graph (do not add, remove, or rename nodes)

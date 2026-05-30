@@ -124,7 +124,6 @@ The following shows a Start node with four different variable types:
 
 ```yaml
 - data:
-    desc: ''
     selected: false
     title: Start
     type: start
@@ -170,7 +169,7 @@ The following shows a Start node with four different variable types:
   sourcePosition: right
   targetPosition: left
   type: custom
-  width: 244
+  width: 243
 ```
 
 ## Output Variables

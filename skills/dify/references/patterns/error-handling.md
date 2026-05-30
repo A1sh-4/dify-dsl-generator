@@ -33,28 +33,25 @@ When the node fails, execution diverges to an alternative path defined by an edg
 
 **Error variables exposed in the fail branch:**
 
-Both variables are available under the failing node's ID:
-- `{{#node_id.error_message#}}` — a human-readable description of the error (e.g., "Connection timed out after 30 seconds")
-- `{{#node_id.error_type#}}` — a machine-readable type string, e.g.:
-  - `"REQUEST_TIMEOUT"`
-  - `"RATE_LIMIT"`
-  - `"CONNECTION_ERROR"`
-  - `"INVALID_RESPONSE"`
-  - `"AUTHENTICATION_ERROR"`
+All four variables are available under the failing node's ID:
+- `{{#node_id.error_message#}}` — human-readable error description (e.g., "Connection timed out")
+- `{{#node_id.error_type#}}` — machine-readable type string, e.g. `"REQUEST_TIMEOUT"`, `"RATE_LIMIT"`, `"CONNECTION_ERROR"`, `"INVALID_RESPONSE"`, `"AUTHENTICATION_ERROR"`
+- `{{#node_id.status_code#}}` — HTTP status code if the server responded (e.g., `404`, `500`); empty if no response
+- `{{#node_id.body#}}` — raw HTTP response body if one was received; empty on connection-level failures
 
 **Edge for fail-branch (critical):**
 
 ```yaml
-- id: "HTTP_NODE_ID-error-handle-ERROR_HANDLER_NODE_ID-target"
+- id: "HTTP_NODE_ID-fail-branch-ERROR_HANDLER_NODE_ID-target"
   source: "HTTP_NODE_ID"
-  sourceHandle: error-handle
+  sourceHandle: fail-branch
   target: "ERROR_HANDLER_NODE_ID"
   targetHandle: target
   type: custom
   zIndex: 0
 ```
 
-Note: `sourceHandle` is literally `error-handle` — this is the handle name, not a description.
+Note: `sourceHandle` is literally `fail-branch` — this is the handle name Dify exports, not a description.
 
 **Use when:**
 - You want graceful degradation instead of an error screen
@@ -214,14 +211,15 @@ workflow:
         type: custom
         zIndex: 0
 
-      # http → llm (fail-branch path — sourceHandle is "error-handle")
+      # http → llm (fail-branch path — sourceHandle is "fail-branch")
       - data:
           isInIteration: false
+          isInLoop: false
           sourceType: http-request
           targetType: llm
-        id: "1747200000002-error-handle-1747200000004-target"
+        id: "1747200000002-fail-branch-1747200000004-target"
         source: "1747200000002"
-        sourceHandle: error-handle
+        sourceHandle: fail-branch
         target: "1747200000004"
         targetHandle: target
         type: custom
@@ -294,28 +292,37 @@ workflow:
 
       - data:
           authorization:
-            config:
-              header: Authorization
-              type: bearer
-              token: "{{#env.API_KEY#}}"
-            type: api-key
+            config: null
+            type: no-auth
           body:
-            data: '{"query": "{{#1747200000001.query#}}"}'
+            data:
+            - id: key-value-1
+              key: ''
+              type: text
+              value: '{"query": "{{#1747200000001.query#}}"}'
             type: json
-          desc: "Call the external API. Fail-branch handles errors."
           error_strategy: fail-branch
-          headers: "Content-Type: application/json"
-          method: POST
+          headers: Content-Type:application/json
+          method: post
+          params: ''
+          retry_config:
+            max_retries: 3
+            retry_enabled: true
+            retry_interval: 1080
+          selected: false
+          ssl_verify: true
           timeout:
             connect: 10
-            max_connect_time: 0
-            read: 30
-            write: 20
+            max_connect_timeout: 0
+            max_read_timeout: 0
+            max_write_timeout: 0
+            read: 600
+            write: 600
           title: External API Call
           type: http-request
           url: "https://api.example.com/v1/search"
           variables: []
-        height: 134
+        height: 158
         id: "1747200000002"
         position:
           x: 380
@@ -368,7 +375,6 @@ workflow:
           desc: "Generate a polite error message from the failure details."
           model:
             completion_params:
-              max_tokens: 256
               temperature: 0.3
             mode: chat
             name: gpt-4o-mini
@@ -377,14 +383,14 @@ workflow:
             - id: error-system
               role: system
               text: |
-                You are a helpful assistant. The external API call failed. Generate a polite, user-friendly error message.
-                Do not expose technical details. Suggest the user try again or contact support.
-
-                Error type: {{#1747200000002.error_type#}}
-                Error message: {{#1747200000002.error_message#}}
+                You are a helpful assistant. The external API call failed. Generate a polite,
+                user-friendly error message. Do not expose technical details. Suggest the
+                user try again or contact support.
             - id: error-user
               role: user
-              text: "Generate a friendly error response for the user."
+              text: "The request failed. Please generate a friendly error message.\n\n\
+                {{#1747200000002.error_type#}}\n\n{{#1747200000002.error_message#}}\n\n\
+                {{#1747200000002.body#}}\n\n{{#1747200000002.status_code#}}"
           title: Error Message LLM
           type: llm
           vision:
@@ -474,7 +480,6 @@ data:
       value: "neutral"
   model:
     completion_params:
-      max_tokens: 10
       temperature: 0.0
     mode: chat
     name: gpt-4o-mini
@@ -520,7 +525,7 @@ retry_config:
 This means: try 3 times total (initial attempt + 2 retries), then go to fail-branch if all attempts fail.
 
 See also:
-- `skills/dify/references/nodes/http-request.md` — full HTTP node field reference
+- `skills/dify/references/nodes/http.md` — full HTTP node field reference
 - `skills/dify/references/nodes/variable-aggregator.md` — how to configure the merge node
 - `skills/dify/references/patterns/parallel-execution.md` — combining error handling with parallel flows
 - `skills/dify/references/schema/edge-types.md` — edge sourceHandle values for each branch type

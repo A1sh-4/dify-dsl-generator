@@ -12,12 +12,11 @@ Every LLM node in a Dify workflow specifies a `model` block that identifies the 
 
 ```yaml
 model:
-  provider: anthropic
-  name: claude-3-5-sonnet-20241022
+  provider: langgenius/openai_api_compatible/openai_api_compatible
+  name: Claude-4-Sonnet
   mode: chat
   completion_params:
     temperature: 0.5
-    max_tokens: 2000
 ```
 
 **Field breakdown:**
@@ -53,12 +52,11 @@ Anthropic's Claude family is known for strong instruction-following, nuanced rea
 **DSL example:**
 ```yaml
 model:
-  provider: anthropic
-  name: claude-3-5-sonnet-20241022
+  provider: langgenius/openai_api_compatible/openai_api_compatible
+  name: Claude-4-Sonnet
   mode: chat
   completion_params:
     temperature: 0.5
-    max_tokens: 2000
 ```
 
 ---
@@ -92,7 +90,6 @@ model:
   mode: chat
   completion_params:
     temperature: 0.3
-    max_tokens: 1500
 ```
 
 ---
@@ -123,8 +120,6 @@ model:
   mode: chat
   completion_params:
     temperature: 0.4
-    top_p: 0.95
-    max_tokens: 4000
 ```
 
 ---
@@ -149,7 +144,6 @@ model:
   mode: chat
   completion_params:
     temperature: 0.5
-    max_tokens: 2000
 ```
 
 **Setup note:** In Dify workspace settings, you configure the endpoint URL and API key. Multiple deployments (e.g., gpt-4o + gpt-4o-mini) require separate provider entries or using Dify's multi-deployment support.
@@ -189,7 +183,6 @@ model:
   mode: chat
   completion_params:
     temperature: 0.6
-    max_tokens: 2000
 ```
 
 ---
@@ -211,7 +204,6 @@ model:
   mode: chat
   completion_params:
     temperature: 0.5
-    max_tokens: 2000
 ```
 
 ---

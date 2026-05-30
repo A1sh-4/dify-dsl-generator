@@ -1,6 +1,6 @@
 ---
 name: dify
-description: Generate production-ready Dify DSL YAML files for chatflows and workflows via a guided multi-agent pipeline
+description: Use when the user wants to build, create, generate, or design anything in Dify — a chatflow, workflow, chatbot, pipeline, agent, or DSL YAML file. Triggers on phrases like "build a Dify app", "create a chatflow", "I need a workflow that...", "make a Dify chatbot", "automate X in Dify", or "generate DSL". Fires even if the user does not say "DSL" or "YAML" explicitly.
 license: MIT
 compatibility: Requires Python 3.8+ and a .venv virtual environment at the project root. Run scripts via .venv/Scripts/python. Requires internet access for plugin/API research.
 metadata:
@@ -32,10 +32,11 @@ These rules are non-negotiable. Violating any of them breaks the pipeline.
 4. **ALWAYS run `plugin-finder` before `api-researcher`.** If an external service is mentioned, check the Dify marketplace first. Use a plugin if one exists. Only research the raw API if no plugin is found.
 5. **NEVER embed API keys, secrets, or credentials in generated YAML.** All sensitive values must use Dify's environment variable syntax: `{{#env.VARIABLE_NAME#}}`. Instruct the user to set these values in Dify's environment settings.
 6. **Language rule — respond in the user's language throughout.** If the user writes in Japanese, respond in Japanese. Node titles, LLM system prompts, user-facing descriptions, error messages, and your own status updates are all in the user's language. Variable names and YAML field names stay ASCII-only (Dify requirement; explain this to the user if they ask).
-7. **MANDATORY agents** — `requirements-analyzer`, `node-planner`, `prompt-engineer`, and `dsl-generator` always run, for every request, no matter how simple. The remaining agents are conditional (see pipeline below).
+7. **MANDATORY agents** — `concept-ideator`, `requirements-analyzer`, `node-planner`, `prompt-engineer`, and `dsl-generator` always run, for every request, no matter how simple. The remaining agents are conditional (see pipeline below).
 8. **Never expose internal agent names to the user.** Do not say "I am now spawning requirements-analyzer." Say "Let me analyze what you need..." instead. The user experiences a conversation, not an engineering pipeline.
 9. **Keep status updates brief.** One sentence per update. The node plan is the one place where you show detailed structure to the user — everything else is a brief progress note.
 10. **After validation passes, always deliver full import instructions.** Do not assume the user knows how to import a DSL file into Dify.
+11. **ALWAYS run concept ideation (Step 2b) first and obtain explicit user confirmation of the App Concept Proposal before spawning `requirements-analyzer`.** This is a mandatory approval gate, like the node-plan gate. Never skip it, even for a detailed prompt.
 
 ---
 
@@ -43,10 +44,12 @@ These rules are non-negotiable. Violating any of them breaks the pipeline.
 
 Before entering the 10-Step Pipeline, check whether the user is invoking a reverse-direction operation on an existing DSL file.
 
-**Detect reverse-direction intent** if the user's input matches any of these patterns (in any language):
-- Contains a file path ending in `.yml` or `.yaml`
-- Uses words like "explain", "what does this do", "describe", "summarize this workflow", "walk me through this DSL"
-- Uses words like "review", "audit", "check", "improve", "critique", "what's wrong with", "is this good"
+**Detect reverse-direction intent** only if the user's input satisfies BOTH of the following conditions simultaneously (in any language):
+
+1. **Contains a `.yml` or `.yaml` file reference** — an explicit file path, attachment, or a request to read/look at a specific YAML file.
+2. **Contains explicit review or explanation intent words** — such as "explain", "what does this do", "describe", "summarize this workflow", "walk me through", "review", "audit", "check", "improve", "critique", "what's wrong with", "is this good", or clear equivalents in the user's language.
+
+Both conditions must be true simultaneously. A `.yml` path alone is not reverse-direction (the user may be referencing a file while asking to build something new). An intent word like "review" without a YAML file is not reverse-direction (e.g., "let me review my requirements and build the chatflow" must route to the forward pipeline).
 
 **If reverse-direction intent is detected:**
 
@@ -93,11 +96,26 @@ Do not prompt them to fill in a template. Do not ask multiple structured questio
 
 ---
 
+### Step 2b — Concept Ideation & Confirmation (MANDATORY)
+
+Before any requirements analysis, expand the user's idea into a full concept and get their confirmation. This is a mandatory approval gate, exactly like the node-plan gate later in the pipeline.
+
+1. Spawn the `concept-ideator` agent (`skills/dify/agents/concept-ideator.md`). Pass it the user's raw description and the full conversation context. Do not name the agent to the user — say something like "Let me flesh your idea out into a fuller concept..."
+2. The agent returns an `=== APP CONCEPT PROPOSAL ===` block. Present it to the user in friendly, readable prose (NOT the raw delimiters). Explicitly draw attention to the inputs it proposed (including ones the user did not mention), the different output types, and the optional creative features.
+3. Invite edits and ask for confirmation, e.g.: "I've expanded your idea into a fuller concept. Add, remove, or change anything — or say 'looks good' to continue."
+4. **CONCEPT APPROVAL GATE — wait for the user.**
+   - If the user requests changes: re-spawn `concept-ideator` with the previous proposal plus the user's change requests, present the revised proposal, and ask again. Repeat until they approve.
+   - If the user approves (any affirmation in any language — "looks good", "yes", "go", "approve"): store the **confirmed App Concept Proposal** and proceed to Step 3.
+5. Do NOT proceed to Step 3 until the user has approved the concept.
+
+---
+
 ### Step 3 — Spawn requirements-analyzer (MANDATORY)
 
 Spawn the `requirements-analyzer` agent defined in `skills/dify/agents/requirements-analyzer.md`.
 
 **Pass to the agent:**
+- The user-confirmed App Concept Proposal from Step 2b (the authoritative scope)
 - The user's raw description, verbatim
 - The full conversation so far (including any context the user provided before the description)
 
@@ -287,6 +305,8 @@ Spawn the `node-planner` agent defined in `skills/dify/agents/node-planner.md`.
 
 **SHOW THE PLAN TO THE USER.** Present the full node graph plan in a readable format. This is the one moment where you show the user detailed technical structure — it is also the approval gate.
 
+**HIGHLIGHT THE DIAGRAM.** The plan includes a `LOGIC FLOW DIAGRAM` section near the bottom — draw the user's attention to this chart and ask them to confirm the flow makes sense before approving.
+
 **WAIT FOR EXPLICIT APPROVAL.** Do not move to Step 6 until the user explicitly approves. Accepted approval signals (in any language): "approve", "looks good", "yes", "go", "proceed", "ok", "perfect", "ship it", or clear equivalents in the user's language.
 
 **If the user requests changes:**
@@ -404,7 +424,7 @@ Do not present the YAML to the user yourself — `dsl-generator` displays it. Yo
 
 ### Step 9 — Validation (AUTOMATIC + CONDITIONAL)
 
-**Automatic path:** The `skills/dify/hooks/post-write-validate.sh` hook fires automatically whenever a `.yml` file is written anywhere under `output/`. It runs `.venv/Scripts/python skills/dify/scripts/validate_workflow.py` and outputs a pass/fail result. Watch for this output.
+**Automatic path:** The `skills/dify/hooks/post-write-validate.ps1` hook fires automatically whenever a `.yml` file is written under `output/`, provided the hook is registered in `.claude/settings.local.json` (see `skills/dify/hooks/hooks.json` for the registration block). It runs `.venv/Scripts/python skills/dify/scripts/validate_workflow.py` and outputs a pass/fail result. Watch for this output.
 
 **If the hook output shows PASS (`✓ DSL validation passed`):**
 Proceed directly to Step 10.

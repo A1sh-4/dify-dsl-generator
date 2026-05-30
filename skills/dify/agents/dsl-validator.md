@@ -143,7 +143,8 @@ Use this table to classify every error the validation script reports. Apply the 
 
 | Error type | Auto-fixable? | Fix procedure |
 |---|---|---|
-| Missing top-level key (`app`, `kind`, `version`, or `workflow`) | Yes | Add the missing key with its correct default value. `kind: app`, `version: 0.1.3`, `app.mode` requires reading the requirements brief or inferring from whether an `answer` or `end` node is present. |
+| Missing top-level key (`app`, `kind`, `version`, or `workflow`) | Yes | Add the missing key with its correct default value. `kind: app`, `version: 0.5.0` (unquoted — the validator accepts 0.5.0 or 0.6.0; always write 0.5.0), `app.mode` requires reading the requirements brief or inferring from whether an `answer` or `end` node is present. |
+| `dependencies` key missing at top level | Yes | Add `dependencies: []` immediately after the `app` block. This key must always be present — use `[]` when no marketplace plugins are needed. Never omit it. |
 | `app.mode` wrong value (e.g., `chat` instead of `advanced-chat`) | Yes | Replace with the correct value: `advanced-chat` for chatflow, `workflow` for workflow. |
 | Duplicate node ID | Yes | Run `.venv/Scripts/python skills/dify/scripts/generate_id.py` to get a new unique ID. Replace every occurrence of the duplicate ID in the file (in the node's `id` field, in all edge `source`/`target` fields referencing it, and in all `{{#node_id.field#}}` variable references). |
 | Edge references non-existent node ID (source or target) | Yes | If the edge is genuinely dangling (the node it points to was supposed to exist but doesn't), remove the edge. If the node exists under a different ID (e.g., a typo), correct the ID in the edge's `source` or `target` field. |
@@ -248,7 +249,7 @@ Nodes: [count] | Edges: [count] | Mode: [app.mode value]
 The file is valid and ready to import into Dify.
 
 Import instructions:
-  1. Open Dify Studio (https://cloud.dify.ai or your self-hosted instance)
+  1. Open Dify Studio (https://app-human04s.tsunagi.ai or your self-hosted instance)
   2. Click "Create App" on the Studio home page
   3. Select "Import DSL File"
   4. Upload [filename.yml]
